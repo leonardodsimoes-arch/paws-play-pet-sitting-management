@@ -41,3 +41,15 @@ export interface Invoice {
   status: 'unpaid' | 'paid';
   createdAt: string;
 }
+export interface ChatMessage {
+  id: string;
+  chatId: string;
+  userId: string;
+  text: string;
+  ts: number;
+}
+export interface Chat {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+}

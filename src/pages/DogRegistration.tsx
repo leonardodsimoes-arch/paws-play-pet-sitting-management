@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Dog, Upload } from 'lucide-react';
+import { Dog, Upload, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,23 +26,39 @@ export function DogRegistration() {
   const navigate = useNavigate();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<DogFormValues>({
     resolver: zodResolver(dogSchema),
-    defaultValues: { behavior: 'friendly', vaccinesUpToDate: false }
+    defaultValues: { 
+      name: '',
+      breed: '',
+      age: 0,
+      weight: 0,
+      behavior: 'friendly', 
+      vaccinesUpToDate: false,
+      diet: '',
+      instructions: ''
+    }
   });
   const onSubmit = (data: DogFormValues) => {
     console.log(data);
-    toast.success("Dog registered successfully!", { description: `${data.name} is ready for play!` });
+    toast.success("Dog registered successfully!", { description: `${data.name} is ready for some fluffy fun!` });
     navigate('/dashboard');
   };
   const behaviorValue = watch('behavior');
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <Button 
+        variant="ghost" 
+        onClick={() => navigate(-1)} 
+        className="mb-6 font-bold hover:bg-playful-yellow/20"
+      >
+        <ChevronLeft className="mr-2 h-4 w-4" /> Back to Pack
+      </Button>
       <div className="playful-card p-8 bg-white space-y-8">
         <header className="flex items-center gap-4 border-b-4 border-black pb-6">
           <div className="bg-playful-yellow border-4 border-black p-3 rounded-2xl">
             <Dog className="w-8 h-8" strokeWidth={3} />
           </div>
           <div>
-            <h1 className="text-3xl font-black">Register New Dog</h1>
+            <h1 className="text-3xl font-black">New Fluffy Friend</h1>
             <p className="font-bold text-muted-foreground">Tell us everything about your buddy!</p>
           </div>
         </header>
@@ -69,8 +85,8 @@ export function DogRegistration() {
           </div>
           <div className="space-y-4">
             <Label className="font-black text-lg">Behavior Profile</Label>
-            <RadioGroup 
-              value={behaviorValue} 
+            <RadioGroup
+              value={behaviorValue}
               onValueChange={(val: any) => setValue('behavior', val)}
               className="grid grid-cols-2 gap-4"
             >
@@ -85,10 +101,10 @@ export function DogRegistration() {
           <div className="space-y-4">
             <Label className="font-black text-lg">Health & Safety</Label>
             <div className="flex items-center space-x-2 border-4 border-black p-4 rounded-xl bg-playful-green/10">
-              <Checkbox 
-                id="vaccines" 
+              <Checkbox
+                id="vaccines"
                 onCheckedChange={(checked) => setValue('vaccinesUpToDate', !!checked)}
-                className="border-2 border-black w-6 h-6 data-[state=checked]:bg-playful-green" 
+                className="border-2 border-black w-6 h-6 data-[state=checked]:bg-playful-green"
               />
               <Label htmlFor="vaccines" className="font-bold text-lg leading-none cursor-pointer">
                 Vaccines are up to date
@@ -96,12 +112,13 @@ export function DogRegistration() {
             </div>
             <div className="border-4 border-dashed border-black/30 rounded-xl p-8 flex flex-col items-center justify-center bg-muted/30">
               <Upload className="w-10 h-10 mb-2 text-muted-foreground" />
-              <p className="font-bold text-muted-foreground">Upload Vaccine Card (PDF or JPG)</p>
+              <p className="font-bold text-muted-foreground">Upload Fluffy Vaccine Card</p>
             </div>
           </div>
           <div className="space-y-2">
             <Label className="font-black text-lg">Dietary Needs</Label>
             <Textarea {...register('diet')} placeholder="Describe food type, timing, and allergies..." className="playful-input min-h-[100px]" />
+            {errors.diet && <p className="text-playful-pink font-bold text-sm">{errors.diet.message}</p>}
           </div>
           <div className="space-y-2">
             <Label className="font-black text-lg">Extra Instructions</Label>
