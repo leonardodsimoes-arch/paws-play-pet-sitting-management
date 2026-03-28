@@ -78,7 +78,8 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "bun install crypto"
+    "bun install crypto",
+    "bun install date-fns"
 ];
     
     if (commands.length === 0) {
