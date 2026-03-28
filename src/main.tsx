@@ -18,6 +18,8 @@ import { DogDetail } from '@/pages/DogDetail';
 import { BookingFlow } from '@/pages/BookingFlow';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminBilling } from '@/pages/AdminBilling';
+import { LoginPage } from '@/pages/LoginPage';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -33,33 +35,38 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />
   },
   {
+    path: "/login",
+    element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />
+  },
+  {
     path: "/dashboard",
-    element: <ClientDashboard />,
+    element: <AuthGuard allowedRoles={["client", "admin"]}><ClientDashboard /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
   {
     path: "/dogs/new",
-    element: <DogRegistration />,
+    element: <AuthGuard allowedRoles={["client", "admin"]}><DogRegistration /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
   {
     path: "/dogs/:id",
-    element: <DogDetail />,
+    element: <AuthGuard allowedRoles={["client", "admin"]}><DogDetail /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
   {
     path: "/book",
-    element: <BookingFlow />,
+    element: <AuthGuard allowedRoles={["client", "admin"]}><BookingFlow /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
   {
     path: "/admin",
-    element: <AdminDashboard />,
+    element: <AuthGuard allowedRoles={["admin"]}><AdminDashboard /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
   {
     path: "/admin/billing",
-    element: <AdminBilling />,
+    element: <AuthGuard allowedRoles={["admin"]}><AdminBilling /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
 ]);
