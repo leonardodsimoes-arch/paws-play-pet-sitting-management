@@ -16,6 +16,13 @@ async function getAuthUser(c: any): Promise<User | null> {
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/auth/login', async (c) => {
     const { email, password } = await c.req.json() as LoginPayload;
+    
+    // Force-reset stale demo users before ensureSeed
+    const userEntity1 = new UserEntity(c.env, 'u1');
+    if (await userEntity1.exists()) await userEntity1.delete();
+    const userEntity2 = new UserEntity(c.env, 'u2');
+    if (await userEntity2.exists()) await userEntity2.delete();
+    
     await UserEntity.ensureSeed(c.env);
     const usersPage = await UserEntity.list(c.env);
     const user = usersPage.items.find(u => u.email === email);
@@ -94,7 +101,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       id: crypto.randomUUID(),
       bookingId: booking.id,
       ownerId: booking.ownerId,
-      amount: booking.total,
+      amount: booking.total || data.total || 0,
       status: 'unpaid',
       createdAt: new Date().toISOString()
     });
