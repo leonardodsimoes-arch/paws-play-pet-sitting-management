@@ -7,11 +7,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Dog as DogIcon, ShieldCheck, Heart, Utensils, AlertTriangle, Calendar, Loader2, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format, parseISO } from 'date-fns';
-const parseLocalISO = (isoString: string) => {
-  if (!isoString) return new Date();
-  return parseISO(isoString.replace('Z', ''));
-};
+import { format } from 'date-fns';
+import { parseLocalISO } from '@/lib/utils';
 export function DogDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -109,7 +106,10 @@ export function DogDetail() {
                   {bookings.sort((a, b) => parseLocalISO(b.startDate).getTime() - parseLocalISO(a.startDate).getTime()).map(booking => {
                     const start = parseLocalISO(booking.startDate);
                     const end = parseLocalISO(booking.endDate);
-                    const dateRange = format(start, 'MMM d') + (booking.serviceType !== 'walk' ? ` - ${format(end, 'MMM d, yyyy')}` : `, ${format(start, 'yyyy')}`);
+                    const isMultiDay = booking.serviceType !== 'walk' && format(start, 'yyyy-MM-dd') !== format(end, 'yyyy-MM-dd');
+                    const dateRange = isMultiDay 
+                      ? `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}` 
+                      : format(start, 'MMM d, yyyy');
                     return (
                       <div key={booking.id} className="p-5 border-4 border-black rounded-2xl flex justify-between items-center font-bold bg-white shadow-solid-sm group hover:translate-x-1 transition-transform">
                         <div className="space-y-1">

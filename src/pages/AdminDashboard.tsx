@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
@@ -7,15 +7,21 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isWithinInterval, parseISO, startOfDay, format, isSameDay } from 'date-fns';
-import { cn } from '@/lib/utils';
-// Timezone-resilient parser that ignores the trailing Z to treat date-times as local browser time
-const parseLocalISO = (isoString: string) => {
-  if (!isoString) return new Date();
-  return parseISO(isoString.replace('Z', ''));
-};
+import { isWithinInterval, startOfDay, format, isSameDay } from 'date-fns';
+import { cn, parseLocalISO } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 export function AdminDashboard() {
   const queryClient = useQueryClient();
+  const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
     queryKey: ['admin-dogs'],
     queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
@@ -32,6 +38,7 @@ export function AdminDashboard() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       toast.success(`Booking ${variables.status.toUpperCase()}!`);
+      setCancelBookingId(null);
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
@@ -146,7 +153,7 @@ export function AdminDashboard() {
                             <CheckCircle2 size={24} strokeWidth={3} />
                           </button>
                           <button
-                            onClick={() => statusMutation.mutate({ id: booking.id, status: 'cancelled' })}
+                            onClick={() => setCancelBookingId(booking.id)}
                             className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink"
                           >
                             <XCircle size={24} strokeWidth={3} />
@@ -206,6 +213,25 @@ export function AdminDashboard() {
           </section>
         </div>
       </div>
+      <AlertDialog open={!!cancelBookingId} onOpenChange={(open) => !open && setCancelBookingId(null)}>
+        <AlertDialogContent className="bg-white border-4 border-black rounded-3xl shadow-solid-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-3xl font-black italic tracking-tight uppercase">Cancel Booking?</AlertDialogTitle>
+            <AlertDialogDescription className="text-lg font-bold text-muted-foreground">
+              This will remove the buddy from the daily schedule. This action is not reversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-4">
+            <AlertDialogCancel className="playful-btn bg-white border-black text-black">Keep Booking</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => cancelBookingId && statusMutation.mutate({ id: cancelBookingId, status: 'cancelled' })}
+              className="playful-btn bg-playful-pink text-white border-black hover:bg-playful-pink/90"
+            >
+              Confirm Cancellation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
