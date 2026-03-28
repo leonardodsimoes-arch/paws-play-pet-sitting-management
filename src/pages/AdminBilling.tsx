@@ -1,10 +1,27 @@
 import React from 'react';
-import { CreditCard, Download, Search, CheckCircle2, XCircle, PiggyBank } from 'lucide-react';
+import { Download, Search, CheckCircle2, XCircle, PiggyBank, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { MOCK_INVOICES, MOCK_USERS } from '@shared/mock-data';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
+import { Invoice, User } from '@shared/types';
+import { AppLayout } from '@/components/layout/AppLayout';
 export function AdminBilling() {
+  const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: () => api<{ items: Invoice[] }>('/api/invoices').then(res => res.items)
+  });
+  const { data: users = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => api<{ items: User[] }>('/api/users').then(res => res.items)
+  });
+  const totalCollected = invoices
+    .filter(inv => inv.status === 'paid')
+    .reduce((sum, inv) => sum + inv.amount, 0);
+  const pendingDues = invoices
+    .filter(inv => inv.status === 'unpaid')
+    .reduce((sum, inv) => sum + inv.amount, 0);
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <AppLayout container>
       <div className="space-y-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -21,15 +38,15 @@ export function AdminBilling() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="playful-card p-6 bg-playful-green text-black">
             <p className="font-bold uppercase text-xs tracking-wider">Total Collected</p>
-            <p className="text-4xl font-black">$2,450.00</p>
+            <p className="text-4xl font-black">${totalCollected.toFixed(2)}</p>
           </div>
           <div className="playful-card p-6 bg-playful-pink text-white">
             <p className="font-bold uppercase text-xs tracking-wider">Pending Dues</p>
-            <p className="text-4xl font-black">$320.00</p>
+            <p className="text-4xl font-black">${pendingDues.toFixed(2)}</p>
           </div>
           <div className="playful-card p-6 bg-playful-blue text-white">
-            <p className="font-bold uppercase text-xs tracking-wider">Fluffy Payout</p>
-            <p className="text-4xl font-black">$1,100.00</p>
+            <p className="font-bold uppercase text-xs tracking-wider">Total Invoiced</p>
+            <p className="text-4xl font-black">${(totalCollected + pendingDues).toFixed(2)}</p>
           </div>
         </div>
         <div className="playful-card overflow-hidden bg-white">
@@ -45,16 +62,18 @@ export function AdminBilling() {
                 </tr>
               </thead>
               <tbody className="font-bold">
-                {MOCK_INVOICES.map((invoice) => {
-                  const user = MOCK_USERS.find(u => u.id === invoice.ownerId);
+                {loadingInvoices || loadingUsers ? (
+                  <tr><td colSpan={5} className="py-12 text-center"><Loader2 className="animate-spin mx-auto" /></td></tr>
+                ) : invoices.map((invoice) => {
+                  const user = users.find(u => u.id === invoice.ownerId);
                   return (
                     <tr key={invoice.id} className="border-b-2 border-black/5 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-playful-yellow border-4 border-black flex items-center justify-center font-black">
-                            {user?.name[0]}
+                            {user?.name?.[0] || '?'}
                           </div>
-                          <span className="text-lg">{user?.name}</span>
+                          <span className="text-lg">{user?.name || 'Unknown Client'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">{new Date(invoice.createdAt).toLocaleDateString()}</td>
@@ -83,6 +102,6 @@ export function AdminBilling() {
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }

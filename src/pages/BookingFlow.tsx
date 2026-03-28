@@ -1,32 +1,59 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Calculator } from 'lucide-react';
+import { Calculator, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MOCK_DOGS } from '@shared/mock-data';
+import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { Dog } from '@shared/types';
+import { AppLayout } from '@/components/layout/AppLayout';
 export function BookingFlow() {
   const navigate = useNavigate();
   const [selectedDog, setSelectedDog] = useState('');
   const [service, setService] = useState('');
   const [date, setDate] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: dogs = [], isLoading: loadingDogs } = useQuery({
+    queryKey: ['dogs'],
+    queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
+  });
   const services = [
     { id: 'stay', name: 'Basic Stay', price: 45, desc: 'Boarding (7 AM to 7 AM next day)' },
     { id: 'daycare', name: 'Daycare', price: 30, desc: 'Playtime (7 AM to 7 PM)' },
     { id: 'walk', name: 'Dog Walk', price: 15, desc: '30-minute neighborhood walk' },
   ];
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!selectedDog || !service || !date) {
       toast.error("Oops!", { description: "Please fill in all details first." });
       return;
     }
-    toast.success("Booking Requested!", { description: "We'll confirm your spot shortly." });
-    navigate('/dashboard');
+    const selectedService = services.find(s => s.id === service);
+    setIsSubmitting(true);
+    try {
+      await api('/api/bookings', {
+        method: 'POST',
+        body: JSON.stringify({
+          dogId: selectedDog,
+          ownerId: 'u1', // Mock
+          serviceType: service,
+          startDate: date,
+          endDate: date, // Simplified for demo
+          total: selectedService?.price || 0
+        })
+      });
+      toast.success("Booking Requested!", { description: "We'll confirm your spot shortly." });
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error("Booking failed", { description: String(err) });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   const selectedService = services.find(s => s.id === service);
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <AppLayout container>
       <div className="space-y-12">
         <header className="text-center">
           <h1 className="text-5xl font-black">Plan a Playdate</h1>
@@ -37,12 +64,12 @@ export function BookingFlow() {
             <div className="playful-card p-8 bg-white space-y-6">
               <div className="space-y-2">
                 <Label className="font-black text-lg">Who is visiting?</Label>
-                <Select onValueChange={setSelectedDog}>
+                <Select onValueChange={setSelectedDog} disabled={loadingDogs}>
                   <SelectTrigger className="playful-input h-14 font-bold">
-                    <SelectValue placeholder="Select a dog" />
+                    <SelectValue placeholder={loadingDogs ? "Loading pack..." : "Select a dog"} />
                   </SelectTrigger>
                   <SelectContent className="border-4 border-black rounded-xl">
-                    {MOCK_DOGS.map(dog => (
+                    {dogs.map(dog => (
                       <SelectItem key={dog.id} value={dog.id} className="font-bold">{dog.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -70,10 +97,10 @@ export function BookingFlow() {
               </div>
               <div className="space-y-2">
                 <Label className="font-black text-lg">Select Start Date</Label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   onChange={(e) => setDate(e.target.value)}
-                  className="playful-input w-full h-14 font-black text-lg" 
+                  className="playful-input w-full h-14 font-black text-lg"
                 />
               </div>
             </div>
@@ -97,13 +124,18 @@ export function BookingFlow() {
                   <span>${selectedService?.price || 0}</span>
                 </div>
               </div>
-              <Button onClick={handleBooking} className="playful-btn w-full bg-playful-yellow text-black border-black hover:bg-playful-yellow/90">
+              <Button 
+                onClick={handleBooking} 
+                disabled={isSubmitting}
+                className="playful-btn w-full bg-playful-yellow text-black border-black hover:bg-playful-yellow/90"
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Confirm Booking
               </Button>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }

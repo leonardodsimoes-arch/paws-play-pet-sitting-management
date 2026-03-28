@@ -1,11 +1,31 @@
 import React from 'react';
-import { LayoutDashboard, Users, AlertTriangle, Utensils, Star } from 'lucide-react';
-import { MOCK_DOGS, MOCK_BOOKINGS } from '@shared/mock-data';
+import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
+import { Dog, Booking } from '@shared/types';
+import { AppLayout } from '@/components/layout/AppLayout';
 export function AdminDashboard() {
+  const { data: dogs = [], isLoading: dogsLoading } = useQuery({
+    queryKey: ['admin-dogs'],
+    queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
+  });
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ['admin-bookings'],
+    queryFn: () => api<{ items: Booking[] }>('/api/bookings').then(res => res.items)
+  });
   const today = new Date().toISOString().split('T')[0];
-  const arrivingToday = MOCK_BOOKINGS.filter(b => b.startDate.startsWith(today));
+  const arrivingToday = bookings.filter(b => b.startDate.startsWith(today));
+  if (dogsLoading || bookingsLoading) {
+    return (
+      <AppLayout container>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-playful-pink" />
+        </div>
+      </AppLayout>
+    );
+  }
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <AppLayout container>
       <div className="space-y-8">
         <header className="flex items-center justify-between">
           <div>
@@ -14,7 +34,7 @@ export function AdminDashboard() {
             </h1>
             <p className="font-bold text-muted-foreground">Operations Overview</p>
           </div>
-          <div className="bg-playful-blue text-white border-4 border-black px-6 py-3 rounded-2xl font-black shadow-solid">
+          <div className="bg-playful-blue text-white border-4 border-black px-6 py-3 rounded-2xl font-black shadow-solid hidden md:block">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </div>
         </header>
@@ -22,22 +42,22 @@ export function AdminDashboard() {
           <div className="playful-card p-6 bg-playful-yellow flex items-center gap-4">
             <div className="bg-black text-white p-3 rounded-xl"><Users /></div>
             <div>
-              <p className="font-black text-3xl">{MOCK_DOGS.length}</p>
+              <p className="font-black text-3xl">{dogs.length}</p>
               <p className="font-bold text-sm">Fluffy Roster</p>
             </div>
           </div>
           <div className="playful-card p-6 bg-playful-green flex items-center gap-4">
             <div className="bg-black text-white p-3 rounded-xl"><LayoutDashboard /></div>
             <div>
-              <p className="font-black text-3xl">{arrivingToday.length || 2}</p>
-              <p className="font-bold text-sm">Check-ins Today</p>
+              <p className="font-black text-3xl">{arrivingToday.length || bookings.length}</p>
+              <p className="font-bold text-sm">Active Bookings</p>
             </div>
           </div>
           <div className="playful-card p-6 bg-playful-pink flex items-center gap-4 text-white">
             <div className="bg-white text-black p-3 rounded-xl"><AlertTriangle /></div>
             <div>
-              <p className="font-black text-3xl">2</p>
-              <p className="font-bold text-sm">Priority Alerts</p>
+              <p className="font-black text-3xl">{dogs.filter(d => d.behavior === 'reactive').length}</p>
+              <p className="font-bold text-sm">High Attention</p>
             </div>
           </div>
         </div>
@@ -45,22 +65,22 @@ export function AdminDashboard() {
           <section className="space-y-4">
             <h2 className="text-2xl font-black">Daily Fluffy Schedule</h2>
             <div className="space-y-4">
-              {MOCK_BOOKINGS.map(booking => {
-                const dog = MOCK_DOGS.find(d => d.id === booking.dogId);
+              {bookings.map(booking => {
+                const dog = dogs.find(d => d.id === booking.dogId);
                 return (
                   <div key={booking.id} className="playful-card p-4 flex items-center justify-between bg-white">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-playful-blue border-2 border-black rounded-lg flex items-center justify-center font-black text-white uppercase">
-                        {dog?.name[0]}
+                        {dog?.name[0] || '?'}
                       </div>
                       <div>
-                        <h4 className="font-black text-lg">{dog?.name}</h4>
+                        <h4 className="font-black text-lg">{dog?.name || 'Unknown'}</h4>
                         <p className="text-xs font-bold text-muted-foreground capitalize">{booking.serviceType}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-sm">07:00 AM</p>
-                      <p className="text-xs font-bold text-muted-foreground uppercase">Scheduled</p>
+                      <p className="font-black text-sm">{new Date(booking.startDate).toLocaleDateString()}</p>
+                      <p className="text-xs font-bold text-muted-foreground uppercase">{booking.status}</p>
                     </div>
                   </div>
                 );
@@ -70,7 +90,7 @@ export function AdminDashboard() {
           <section className="space-y-4">
             <h2 className="text-2xl font-black text-playful-pink">Care & Safety Notices</h2>
             <div className="space-y-4">
-              {MOCK_DOGS.filter(d => d.behavior === 'aggressive' || d.behavior === 'reactive' || d.instructions).map(dog => (
+              {dogs.filter(d => d.behavior === 'reactive' || d.instructions).map(dog => (
                 <div key={dog.id} className="playful-card p-5 border-l-8 border-l-playful-pink bg-playful-pink/5">
                   <div className="flex items-start gap-4">
                     <div className="bg-playful-pink p-2 rounded-lg">
@@ -83,11 +103,11 @@ export function AdminDashboard() {
                           <span className="bg-playful-pink text-white px-3 py-1 rounded-full text-xs font-black">REACTIVE</span>
                         )}
                         <span className="bg-playful-blue/10 text-playful-blue px-3 py-1 rounded-full text-xs font-black flex items-center gap-1 border border-playful-blue/20">
-                          <Utensils className="w-3 h-3" /> DIET: {dog.diet.slice(0, 25)}...
+                          <Utensils className="w-3 h-3" /> DIET: {dog.diet.slice(0, 20)}...
                         </span>
                       </div>
                       <p className="text-sm font-bold text-muted-foreground bg-white/50 border-2 border-black/5 p-3 rounded-xl italic">
-                        "{dog.instructions}"
+                        "{dog.instructions || 'No special instructions'}"
                       </p>
                     </div>
                   </div>
@@ -97,6 +117,6 @@ export function AdminDashboard() {
           </section>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
