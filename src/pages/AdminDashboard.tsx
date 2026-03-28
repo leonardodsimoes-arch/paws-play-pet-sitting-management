@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle, Home } from 'lucide-react';
+import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Dog, Booking } from '@shared/types';
@@ -7,7 +7,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isWithinInterval, parseISO, startOfDay, endOfDay, format } from 'date-fns';
+import { isWithinInterval, parseISO, startOfDay, format } from 'date-fns';
+import { cn } from '@/lib/utils';
 export function AdminDashboard() {
   const queryClient = useQueryClient();
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
@@ -57,12 +58,12 @@ export function AdminDashboard() {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-3">
-              ADMIN HUB <Star className="text-playful-yellow fill-playful-yellow" />
+              ADMIN HUB <Star className="text-playful-yellow fill-playful-yellow" strokeWidth={3} />
             </h1>
             <p className="font-bold text-muted-foreground text-xl">Daily Operations Dashboard</p>
           </div>
           <div className="bg-playful-blue text-white border-4 border-black px-8 py-4 rounded-3xl font-black shadow-solid flex items-center gap-3">
-            <Calendar className="text-playful-yellow" />
+            <Calendar className="text-playful-yellow" strokeWidth={3} />
             {format(new Date(), 'EEEE, MMMM do')}
           </div>
         </header>
@@ -86,7 +87,7 @@ export function AdminDashboard() {
             <h2 className="text-3xl font-black italic tracking-tight uppercase">Daily Schedule</h2>
             <div className="space-y-4">
               {activeBookings.length === 0 ? (
-                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">No activities scheduled for today.</div>
+                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">No activities scheduled for today.</div>
               ) : activeBookings.map(booking => {
                 const dog = dogs.find(d => d.id === booking.dogId);
                 const colorMap = { stay: 'bg-playful-pink', daycare: 'bg-playful-yellow', walk: 'bg-playful-blue' };
@@ -115,7 +116,7 @@ export function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
                           <span className="w-1 h-1 bg-black/20 rounded-full" />
-                          <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase", statusColor)}>
+                          <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase", statusColor)}>
                             {statusLabel} {timeInfo}
                           </span>
                         </div>
@@ -139,7 +140,10 @@ export function AdminDashboard() {
                         </div>
                       )}
                       <div className="text-right">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
+                        <span className={cn(
+                          "text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase",
+                          booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'
+                        )}>
                           {booking.status}
                         </span>
                       </div>
@@ -153,7 +157,7 @@ export function AdminDashboard() {
             <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase">Care & Safety Notices</h2>
             <div className="space-y-4">
               {todayCareAlertDogs.length === 0 ? (
-                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">All clear for today's visitors!</div>
+                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">All clear for today's visitors!</div>
               ) : todayCareAlertDogs.map(dog => (
                 <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
                   <div className="flex items-start gap-4">
@@ -164,7 +168,7 @@ export function AdminDashboard() {
                       <div className="flex justify-between items-center">
                         <h4 className="font-black text-2xl italic tracking-tighter uppercase">{dog.name}</h4>
                         <Link to={`/dogs/${dog.id}`} className="text-playful-blue font-black text-xs hover:underline flex items-center gap-1 uppercase">
-                          View Profile <ArrowRight size={14} />
+                          View Profile <ArrowRight size={14} strokeWidth={3} />
                         </Link>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -177,7 +181,7 @@ export function AdminDashboard() {
                           <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet ? dog.diet.slice(0, 20) : 'None'}...
                         </span>
                       </div>
-                      <div className="bg-muted/30 border-2 border-black/5 p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">
+                      <div className="bg-muted/30 border-4 border-black p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">
                         "{dog.instructions || 'No special instructions recorded'}"
                       </div>
                     </div>
