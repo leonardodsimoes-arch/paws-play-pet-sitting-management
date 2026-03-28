@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Download, Search, CheckCircle2, XCircle, PiggyBank, Loader2, DollarSign } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { toast } from 'sonner';
 export function AdminBilling() {
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
   const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => api<{ items: Invoice[] }>('/api/invoices').then(res => res.items)
@@ -27,10 +28,20 @@ export function AdminBilling() {
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
-  const totalCollected = invoices
+  const filteredInvoices = invoices.filter(invoice => {
+    if (!searchTerm) return true;
+    const user = users.find(u => u.id === invoice.ownerId);
+    if (!user) return false;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      user.name.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower)
+    );
+  });
+  const totalCollected = filteredInvoices
     .filter(inv => inv.status === 'paid')
     .reduce((sum, inv) => sum + inv.amount, 0);
-  const pendingDues = invoices
+  const pendingDues = filteredInvoices
     .filter(inv => inv.status === 'unpaid')
     .reduce((sum, inv) => sum + inv.amount, 0);
   return (
@@ -45,20 +56,25 @@ export function AdminBilling() {
           </div>
           <div className="relative max-w-sm w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="playful-input pl-10 h-12" placeholder="Search fluffy parents..." />
+            <Input 
+              className="playful-input pl-10 h-12" 
+              placeholder="Search fluffy parents..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </header>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="playful-card p-6 bg-playful-green text-black">
-            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Total Collected</p>
+            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Filtered Collected</p>
             <p className="text-4xl font-black">${totalCollected.toFixed(2)}</p>
           </div>
           <div className="playful-card p-6 bg-playful-pink text-white">
-            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Pending Dues</p>
+            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Filtered Dues</p>
             <p className="text-4xl font-black">${pendingDues.toFixed(2)}</p>
           </div>
           <div className="playful-card p-6 bg-playful-blue text-white">
-            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Total Invoiced</p>
+            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Filtered Total</p>
             <p className="text-4xl font-black">${(totalCollected + pendingDues).toFixed(2)}</p>
           </div>
         </div>
@@ -77,9 +93,9 @@ export function AdminBilling() {
               <tbody className="font-bold">
                 {loadingInvoices || loadingUsers ? (
                   <tr><td colSpan={5} className="py-12 text-center"><Loader2 className="animate-spin mx-auto text-playful-pink" /></td></tr>
-                ) : invoices.length === 0 ? (
-                  <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">No invoices generated yet.</td></tr>
-                ) : invoices.map((invoice) => {
+                ) : filteredInvoices.length === 0 ? (
+                  <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">No invoices found.</td></tr>
+                ) : filteredInvoices.map((invoice) => {
                   const user = users.find(u => u.id === invoice.ownerId);
                   return (
                     <tr key={invoice.id} className="border-b-2 border-black/5 last:border-0 hover:bg-muted/30 transition-colors">
