@@ -3,7 +3,7 @@ import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Dog, Upload, ChevronLeft, Loader2, CheckCircle2, Sparkles, Progress } from 'lucide-react';
+import { Dog, Upload, ChevronLeft, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,7 +61,7 @@ export function DogRegistration() {
           ownerId: userId,
         })
       });
-      toast.success("Dog registered successfully!", { 
+      toast.success("Dog registered successfully!", {
         description: `${data.name} is ready for some fluffy fun!`,
         icon: <Sparkles className="text-playful-yellow" />
       });

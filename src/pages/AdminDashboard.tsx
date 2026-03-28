@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Dog, Booking } from '@shared/types';
@@ -37,6 +37,12 @@ export function AdminDashboard() {
     const end = b.endDate?.split('T')[0];
     return start === todayStr || end === todayStr;
   });
+  // Calculate care alerts strictly for today's visitors
+  const todayCareAlertDogs = dogs.filter(dog => {
+    const isScheduledToday = activeBookings.some(b => b.dogId === dog.id);
+    const hasSpecialNeeds = dog.behavior === 'reactive' || dog.behavior === 'aggressive' || (dog.instructions && dog.instructions.trim().length > 0);
+    return isScheduledToday && hasSpecialNeeds;
+  });
   if (dogsLoading || bookingsLoading) {
     return (
       <AppLayout container>
@@ -65,7 +71,7 @@ export function AdminDashboard() {
           {[
             { label: 'Fluffy Roster', value: dogs.length, icon: Users, color: 'bg-playful-yellow', textColor: 'text-black' },
             { label: 'Today\'s Buddies', value: activeBookings.length, icon: LayoutDashboard, color: 'bg-playful-green', textColor: 'text-black' },
-            { label: 'Care Alerts', value: dogs.filter(d => d.behavior === 'reactive' || d.behavior === 'aggressive').length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
+            { label: 'Care Alerts', value: todayCareAlertDogs.length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
           ].map((stat, i) => (
             <motion.div key={i} whileHover={{ y: -4 }} className={`playful-card p-8 ${stat.color} ${stat.textColor} flex items-center gap-6`}>
               <div className="bg-white text-black p-4 rounded-2xl border-4 border-black"><stat.icon size={32} strokeWidth={3} /></div>
@@ -110,7 +116,7 @@ export function AdminDashboard() {
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
                             className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green border-2 border-transparent hover:border-black/5"
                           >
-                            <CheckCircle size={24} strokeWidth={3} />
+                            <CheckCircle2 size={24} strokeWidth={3} />
                           </button>
                           <button
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'cancelled' })}
@@ -134,9 +140,9 @@ export function AdminDashboard() {
           <section className="space-y-6">
             <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase">Care & Safety Notices</h2>
             <div className="space-y-4">
-              {dogs.filter(d => (d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()) && activeBookings.some(b => b.dogId === d.id)).length === 0 ? (
+              {todayCareAlertDogs.length === 0 ? (
                 <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">All clear for today's visitors!</div>
-              ) : dogs.filter(d => (d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()) && activeBookings.some(b => b.dogId === d.id)).map(dog => (
+              ) : todayCareAlertDogs.map(dog => (
                 <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
                   <div className="flex items-start gap-4">
                     <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white">
