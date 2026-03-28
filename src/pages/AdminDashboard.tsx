@@ -9,6 +9,11 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { isWithinInterval, parseISO, startOfDay, format, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
+// Timezone-resilient parser that ignores the trailing Z to treat date-times as local browser time
+const parseLocalISO = (isoString: string) => {
+  if (!isoString) return new Date();
+  return parseISO(isoString.replace('Z', ''));
+};
 export function AdminDashboard() {
   const queryClient = useQueryClient();
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
@@ -33,8 +38,8 @@ export function AdminDashboard() {
   const today = startOfDay(new Date());
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled') return false;
-    const start = startOfDay(parseISO(b.startDate));
-    const end = startOfDay(parseISO(b.endDate));
+    const start = startOfDay(parseLocalISO(b.startDate));
+    const end = startOfDay(parseLocalISO(b.endDate));
     return isWithinInterval(today, { start, end });
   });
   const todayCareAlertDogs = dogs.filter(dog => {
@@ -46,7 +51,7 @@ export function AdminDashboard() {
     return (
       <AppLayout container>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-playful-pink" />
+          <Loader2 className="h-12 w-12 animate-spin text-playful-pink" strokeWidth={3} />
         </div>
       </AppLayout>
     );
@@ -83,17 +88,22 @@ export function AdminDashboard() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <section className="space-y-6">
-            <h2 className="text-3xl font-black italic tracking-tight uppercase flex items-center gap-2">
-              <Clock className="text-playful-blue" strokeWidth={3} /> Daily Schedule
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-3xl font-black italic tracking-tight uppercase flex items-center gap-2">
+                <Clock className="text-playful-blue" strokeWidth={3} /> Daily Schedule
+              </h2>
+              <span className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                Today: {format(new Date(), 'MMM d')}
+              </span>
+            </div>
             <div className="space-y-4">
               {activeBookings.length === 0 ? (
                 <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">No activities scheduled for today.</div>
               ) : activeBookings.map(booking => {
                 const dog = dogs.find(d => d.id === booking.dogId);
                 const colorMap = { stay: 'bg-playful-pink', daycare: 'bg-playful-yellow', walk: 'bg-playful-blue' };
-                const start = startOfDay(parseISO(booking.startDate));
-                const end = startOfDay(parseISO(booking.endDate));
+                const start = startOfDay(parseLocalISO(booking.startDate));
+                const end = startOfDay(parseLocalISO(booking.endDate));
                 let statusLabel = 'In House';
                 let timeInfo = '';
                 let statusColor = 'bg-playful-blue text-white';
@@ -120,7 +130,6 @@ export function AdminDashboard() {
                         <h4 className="font-black text-xl italic uppercase tracking-tighter">{dog?.name || 'Unknown'}</h4>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
-                          <span className="w-1 h-1 bg-black/20 rounded-full" />
                           <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase whitespace-nowrap", statusColor)}>
                             {statusLabel} {timeInfo}
                           </span>
@@ -144,14 +153,12 @@ export function AdminDashboard() {
                           </button>
                         </div>
                       )}
-                      <div className="text-right">
-                        <span className={cn(
-                          "text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase",
-                          booking.status === 'confirmed' ? 'bg-playful-green text-black' : 'bg-playful-yellow text-black'
-                        )}>
-                          {booking.status}
-                        </span>
-                      </div>
+                      <span className={cn(
+                        "text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase",
+                        booking.status === 'confirmed' ? 'bg-playful-green text-black' : 'bg-playful-yellow text-black'
+                      )}>
+                        {booking.status}
+                      </span>
                     </div>
                   </div>
                 );

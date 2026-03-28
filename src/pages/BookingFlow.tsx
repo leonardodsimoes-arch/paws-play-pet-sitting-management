@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon, ArrowRight } from 'lucide-react';
+import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,58 +32,52 @@ export function BookingFlow() {
     { id: 'walk', name: 'Dog Walk', price: 15, time: '30/60 mins', desc: 'Neighborhood Stroll' },
   ];
   const calculation = useMemo(() => {
-    if (!service || !checkInDate) return { total: 0, units: 0, label: '' };
+    if (!service || !checkInDate) return { total: 0, units: 0, label: '', isValid: false };
     if (service === 'walk') {
       const price = walkDuration === '60' ? 25 : 15;
-      return { total: price, units: 1, label: walkDuration === '60' ? '60 min walk' : '30 min walk' };
+      return { total: price, units: 1, label: walkDuration === '60' ? '60 min walk' : '30 min walk', isValid: true };
     }
-    if (!checkOutDate) return { total: 0, units: 0, label: '' };
+    if (!checkOutDate) return { total: 0, units: 0, label: '', isValid: false };
     const start = parseISO(checkInDate);
     const end = parseISO(checkOutDate);
     const days = differenceInDays(end, start);
     if (service === 'stay') {
-      const nights = Math.max(1, days);
-      return { total: nights * 45, units: nights, label: `${nights} Night${nights > 1 ? 's' : ''}` };
+      if (days < 1) return { total: 0, units: 0, label: 'Invalid Range', isValid: false };
+      return { total: days * 45, units: days, label: `${days} Night${days > 1 ? 's' : ''}`, isValid: true };
     }
     if (service === 'daycare') {
-      const dayCount = days + 1;
-      return { total: dayCount * 30, units: dayCount, label: `${dayCount} Day${dayCount > 1 ? 's' : ''}` };
+      const dayCount = Math.max(1, days + 1);
+      return { total: dayCount * 30, units: dayCount, label: `${dayCount} Day${dayCount > 1 ? 's' : ''}`, isValid: true };
     }
-    return { total: 0, units: 0, label: '' };
+    return { total: 0, units: 0, label: '', isValid: false };
   }, [service, checkInDate, checkOutDate, walkDuration]);
   const handleBooking = async () => {
     if (!selectedDog || !service || !checkInDate) {
       toast.error("Oops!", { description: "Please fill in all details first." });
       return;
     }
+    if (service === 'stay' && (!checkOutDate || differenceInDays(parseISO(checkOutDate), parseISO(checkInDate)) < 1)) {
+      toast.error("Invalid Stay", { 
+        description: "Boarding requires at least one night (Check-out must be after Check-in day).",
+        icon: <AlertCircle className="text-playful-pink" />
+      });
+      return;
+    }
     if (service !== 'walk' && !checkOutDate) {
       toast.error("Oops!", { description: "Please select a checkout date." });
       return;
     }
-    const arrivalDate = new Date(`${checkInDate}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (arrivalDate < today) {
-      toast.error("Invalid Date", { description: "Paws can't travel back in time!" });
-      return;
-    }
-    if (checkOutDate && new Date(checkOutDate) < new Date(checkInDate)) {
-      toast.error("Invalid Range", { description: "Checkout must be after Check-in!" });
-      return;
-    }
     setIsSubmitting(true);
     try {
-      const startDateStr = `${checkInDate}T07:00:00Z`;
+      // Use local ISO format without 'Z' to avoid UTC shifts in the worker if it parses strictly
+      const startDateStr = `${checkInDate}T07:00:00`;
       let endDateStr = startDateStr;
       if (service === 'stay') {
-        endDateStr = `${checkOutDate}T07:00:00Z`;
+        endDateStr = `${checkOutDate}T07:00:00`;
       } else if (service === 'daycare') {
-        endDateStr = `${checkOutDate}T19:00:00Z`;
+        endDateStr = `${checkOutDate}T19:00:00`;
       } else if (service === 'walk') {
-        const mins = parseInt(walkDuration);
-        const end = new Date(`${checkInDate}T07:00:00Z`);
-        end.setMinutes(end.getMinutes() + mins);
-        endDateStr = end.toISOString();
+        endDateStr = `${checkInDate}T07:30:00`;
       }
       await api('/api/bookings', {
         method: 'POST',
@@ -104,7 +98,7 @@ export function BookingFlow() {
       setIsSubmitting(false);
     }
   };
-  const isFormComplete = !!(selectedDog && service && checkInDate && (service === 'walk' || checkOutDate));
+  const isFormComplete = !!(selectedDog && service && checkInDate && calculation.isValid);
   const selectedServiceData = services.find(s => s.id === service);
   return (
     <AppLayout container>
@@ -160,7 +154,7 @@ export function BookingFlow() {
                           <p className="font-bold text-muted-foreground mt-1">{s.desc}</p>
                         </div>
                         <span className="font-black text-3xl">
-                          {s.id === 'walk' ? '$15+' : `$${s.price}`}
+                          {s.id === 'walk' ? '$15+' : `${s.price}`}
                         </span>
                       </div>
                     </button>
@@ -169,19 +163,31 @@ export function BookingFlow() {
               </div>
               {service && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  {service === 'walk' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="font-black text-xl flex items-center gap-2">
+                        <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> {service === 'walk' ? 'Date' : 'Check-in Date'}
+                      </Label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setCheckInDate(e.target.value)}
+                        className="playful-input w-full h-14 font-black border-black"
+                      />
+                    </div>
+                    {service !== 'walk' ? (
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
-                          <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> Date
+                          <ArrowRight size={24} className="text-playful-green" strokeWidth={3} /> Check-out Date
                         </Label>
                         <input
                           type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setCheckInDate(e.target.value)}
+                          min={checkInDate || new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setCheckOutDate(e.target.value)}
                           className="playful-input w-full h-14 font-black border-black"
                         />
                       </div>
+                    ) : (
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
                           <Clock size={24} className="text-playful-pink" strokeWidth={3} /> Duration
@@ -196,35 +202,10 @@ export function BookingFlow() {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="font-black text-xl flex items-center gap-2">
-                          <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> Check-in Date
-                        </Label>
-                        <input
-                          type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setCheckInDate(e.target.value)}
-                          className="playful-input w-full h-14 font-black border-black"
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="font-black text-xl flex items-center gap-2">
-                          <ArrowRight size={24} className="text-playful-green" strokeWidth={3} /> Check-out Date
-                        </Label>
-                        <input
-                          type="date"
-                          min={checkInDate || new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setCheckOutDate(e.target.value)}
-                          className="playful-input w-full h-14 font-black border-black"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <p className="text-sm font-bold text-muted-foreground italic">
-                    * {service === 'stay' ? 'Stay check-out is strictly 7:00 AM.' : service === 'daycare' ? 'Daycare check-out is 7:00 PM.' : 'Walk timing starts at 7:00 AM.'}
+                    * {service === 'stay' ? 'Stay check-out is strictly 7:00 AM next day.' : service === 'daycare' ? 'Daycare check-out is 7:00 PM.' : 'Walk timing starts at 7:00 AM.'}
                   </p>
                 </motion.div>
               )}
@@ -247,7 +228,7 @@ export function BookingFlow() {
                 {calculation.units > 0 && (
                   <div className="flex justify-between text-lg items-center">
                     <span className="opacity-70 text-sm uppercase tracking-widest font-black">Quantity</span>
-                    <span className="italic">{calculation.label}</span>
+                    <span className={cn("italic", !calculation.isValid && "text-playful-pink")}>{calculation.label}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-4xl font-black border-t-4 border-black/20 pt-6 mt-6">
@@ -255,18 +236,16 @@ export function BookingFlow() {
                   <span className="text-playful-yellow">${calculation.total}</span>
                 </div>
               </div>
-              <motion.div animate={isFormComplete && !isSubmitting ? { scale: [1, 1.05, 1], rotate: [0, 1, -1, 0] } : {}} transition={{ repeat: Infinity, duration: 3 }}>
-                <Button
-                  onClick={handleBooking}
-                  disabled={!isFormComplete || isSubmitting}
-                  className={cn(
-                    "playful-btn w-full text-black border-black h-16 text-xl font-black transition-all",
-                    isFormComplete ? "bg-playful-yellow hover:bg-playful-yellow/90 hover:scale-105" : "bg-muted text-muted-foreground opacity-50"
-                  )}
-                >
-                  {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "CONFIRM BOOKING"}
-                </Button>
-              </motion.div>
+              <Button
+                onClick={handleBooking}
+                disabled={!isFormComplete || isSubmitting}
+                className={cn(
+                  "playful-btn w-full text-black border-black h-16 text-xl font-black transition-all",
+                  isFormComplete ? "bg-playful-yellow hover:bg-playful-yellow/90" : "bg-muted text-muted-foreground opacity-50"
+                )}
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "CONFIRM BOOKING"}
+              </Button>
             </div>
           </div>
         </div>
