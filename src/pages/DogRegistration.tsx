@@ -161,10 +161,12 @@ export function DogRegistration() {
               <AnimatePresence>
                 {selectedBreed === "Other" && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2 md:col-span-2"
+                    initial={{ opacity: 0, scaleY: 0 }}
+                    animate={{ opacity: 1, scaleY: 1 }}
+                    exit={{ opacity: 0, scaleY: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ originY: 0 }}
+                    className="space-y-2 md:col-span-2 overflow-hidden"
                   >
                     <Label className="font-black text-lg text-foreground">Specify Breed</Label>
                     <Input {...register('otherBreed')} placeholder="Tell us the breed!" className="playful-input" />

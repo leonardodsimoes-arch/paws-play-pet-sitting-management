@@ -22,7 +22,6 @@ export function LoginPage() {
   const location = useLocation();
   const setAuth = useAuthStore(s => s.setAuth);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const from = location.state?.from?.pathname || "/";
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' }
@@ -49,7 +48,7 @@ export function LoginPage() {
   };
   return (
     <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="max-w-md w-full playful-card p-8 bg-white space-y-8"
@@ -66,11 +65,11 @@ export function LoginPage() {
             <Label className="font-black text-lg">Fluffy Email</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input 
-                {...register('email')} 
-                type="email" 
-                placeholder="alex@fluffy.com" 
-                className="playful-input pl-10" 
+              <Input
+                {...register('email')}
+                type="email"
+                placeholder="alex@fluffy.com"
+                className="playful-input pl-10"
               />
             </div>
             {errors.email && <p className="text-playful-pink font-bold text-sm">{errors.email.message}</p>}
@@ -79,17 +78,17 @@ export function LoginPage() {
             <Label className="font-black text-lg">Password</Label>
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input 
-                {...register('password')} 
-                type="password" 
-                placeholder="••••••••" 
-                className="playful-input pl-10" 
+              <Input
+                {...register('password')}
+                type="password"
+                placeholder="••••••••"
+                className="playful-input pl-10"
               />
             </div>
             {errors.password && <p className="text-playful-pink font-bold text-sm">{errors.password.message}</p>}
           </div>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isSubmitting}
             className="playful-btn w-full bg-playful-blue text-white hover:bg-playful-blue/90 h-14 text-xl font-black"
           >

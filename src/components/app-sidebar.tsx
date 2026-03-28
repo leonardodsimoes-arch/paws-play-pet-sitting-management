@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 export function AppSidebar(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = useAuthStore(s => s.user);
+  const userName = useAuthStore(s => s.user?.name);
+  const userRole = useAuthStore(s => s.user?.role);
   const logout = useAuthStore(s => s.logout);
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const handleLogout = () => {
@@ -53,7 +54,7 @@ export function AppSidebar(): JSX.Element {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {user?.role === 'admin' && (
+                {userRole === 'admin' && (
                   <>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/admin"}>
@@ -113,11 +114,11 @@ export function AppSidebar(): JSX.Element {
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-white border-2 border-black rounded-2xl shadow-solid-sm">
               <div className="h-10 w-10 rounded-full bg-playful-yellow border-2 border-black flex items-center justify-center font-black">
-                {user?.name?.[0]}
+                {userName?.[0]}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-black truncate leading-tight">{user?.name}</p>
-                <p className="text-[10px] font-black uppercase text-playful-blue tracking-tighter">{user?.role}</p>
+                <p className="text-sm font-black truncate leading-tight">{userName}</p>
+                <p className="text-[10px] font-black uppercase text-playful-blue tracking-tighter">{userRole}</p>
               </div>
             </div>
             <Button
