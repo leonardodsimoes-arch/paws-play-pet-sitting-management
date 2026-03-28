@@ -158,22 +158,20 @@ export function DogRegistration() {
                 />
                 {errors.breed && <p className="text-playful-pink font-bold text-xs">{errors.breed.message}</p>}
               </div>
-              <AnimatePresence>
-                {selectedBreed === "Other" && (
-                  <motion.div
-                    initial={{ opacity: 0, scaleY: 0 }}
-                    animate={{ opacity: 1, scaleY: 1 }}
-                    exit={{ opacity: 0, scaleY: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ originY: 0 }}
-                    className="space-y-2 md:col-span-2 overflow-hidden"
-                  >
-                    <Label className="font-black text-lg text-foreground">Specify Breed</Label>
-                    <Input {...register('otherBreed')} placeholder="Tell us the breed!" className="playful-input" />
-                    {errors.otherBreed && <p className="text-playful-pink font-bold text-xs">{errors.otherBreed.message}</p>}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <div className="md:col-span-2">
+                <motion.div 
+                  className="overflow-hidden space-y-2" 
+                  animate={{ 
+                    maxHeight: selectedBreed === "Other" ? 140 : 0, 
+                    opacity: selectedBreed === "Other" ? 1 : 0 
+                  }} 
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                >
+                  <Label className="font-black text-lg text-foreground">Specify Breed</Label>
+                  <Input {...register('otherBreed')} placeholder="Tell us the breed!" className="playful-input" />
+                  {errors.otherBreed && <p className="text-playful-pink font-bold text-xs">{errors.otherBreed.message}</p>}
+                </motion.div>
+              </div>
               <div className="space-y-2">
                 <Label className="font-black text-lg text-foreground">Age (Years)</Label>
                 <Input type="number" {...register('age', { valueAsNumber: true })} className="playful-input" />
