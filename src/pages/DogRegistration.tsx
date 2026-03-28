@@ -9,14 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuthStore } from '@/store/use-auth-store';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DOG_BREEDS } from '@/lib/constants';
 const dogSchema = z.object({
   name: z.string().min(1, "Name is required"),
   breed: z.string().min(1, "Breed is required"),
+  otherBreed: z.string().optional(),
   age: z.number().min(0, "Age cannot be negative"),
   weight: z.number().min(0, "Weight cannot be negative"),
   behavior: z.enum(['friendly', 'shy', 'aggressive', 'reactive']),
@@ -25,6 +28,14 @@ const dogSchema = z.object({
   }),
   diet: z.string().min(1, "Diet details are important for fluffy safety!"),
   instructions: z.string(),
+}).refine((data) => {
+  if (data.breed === "Other" && (!data.otherBreed || data.otherBreed.trim() === "")) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please specify the breed",
+  path: ["otherBreed"]
 });
 type DogFormValues = z.infer<typeof dogSchema>;
 export function DogRegistration() {
@@ -34,11 +45,12 @@ export function DogRegistration() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [hasUploaded, setHasUploaded] = useState(false);
-  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<DogFormValues>({
+  const { register, handleSubmit, control, setValue, watch, formState: { errors } } = useForm<DogFormValues>({
     resolver: zodResolver(dogSchema),
     defaultValues: {
       name: '',
       breed: '',
+      otherBreed: '',
       age: 0,
       weight: 0,
       behavior: 'friendly',
@@ -47,6 +59,7 @@ export function DogRegistration() {
       instructions: ''
     }
   });
+  const selectedBreed = watch('breed');
   const onSubmit: SubmitHandler<DogFormValues> = async (data) => {
     if (!userId) {
       toast.error("Session missing. Please login again.");
@@ -54,10 +67,12 @@ export function DogRegistration() {
     }
     setIsSubmitting(true);
     try {
+      const finalBreed = data.breed === "Other" ? data.otherBreed : data.breed;
       await api('/api/dogs', {
         method: 'POST',
         body: JSON.stringify({
           ...data,
+          breed: finalBreed,
           ownerId: userId,
         })
       });
@@ -123,9 +138,40 @@ export function DogRegistration() {
               </div>
               <div className="space-y-2">
                 <Label className="font-black text-lg text-foreground">Breed</Label>
-                <Input {...register('breed')} placeholder="Golden Retriever" className="playful-input" />
+                <Controller
+                  name="breed"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger className="playful-input h-11 bg-white">
+                        <SelectValue placeholder="Select a breed" />
+                      </SelectTrigger>
+                      <SelectContent className="border-4 border-black rounded-xl">
+                        {DOG_BREEDS.map((breed) => (
+                          <SelectItem key={breed} value={breed} className="font-bold">
+                            {breed}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.breed && <p className="text-playful-pink font-bold text-xs">{errors.breed.message}</p>}
               </div>
+              <AnimatePresence>
+                {selectedBreed === "Other" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-2 md:col-span-2"
+                  >
+                    <Label className="font-black text-lg text-foreground">Specify Breed</Label>
+                    <Input {...register('otherBreed')} placeholder="Tell us the breed!" className="playful-input" />
+                    {errors.otherBreed && <p className="text-playful-pink font-bold text-xs">{errors.otherBreed.message}</p>}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="space-y-2">
                 <Label className="font-black text-lg text-foreground">Age (Years)</Label>
                 <Input type="number" {...register('age', { valueAsNumber: true })} className="playful-input" />
