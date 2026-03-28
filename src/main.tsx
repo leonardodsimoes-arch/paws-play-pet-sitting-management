@@ -23,6 +23,7 @@ import { AdminUserDetail } from '@/pages/AdminUserDetail';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { Toaster } from 'sonner';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -93,6 +94,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <RouterProvider router={router} />
+        <Toaster position="top-right" theme="light" richColors />
       </ErrorBoundary>
     </QueryClientProvider>
   </StrictMode>,
