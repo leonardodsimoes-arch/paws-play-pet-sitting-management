@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -19,9 +18,9 @@ const dogSchema = z.object({
   age: z.coerce.number().min(0),
   weight: z.coerce.number().min(0),
   behavior: z.enum(['friendly', 'shy', 'aggressive', 'reactive']),
-  vaccinesUpToDate: z.boolean().default(false),
+  vaccinesUpToDate: z.boolean(),
   diet: z.string().min(1, "Diet details required"),
-  instructions: z.string().default(""),
+  instructions: z.string(),
 });
 type DogFormValues = z.infer<typeof dogSchema>;
 export function DogRegistration() {
@@ -72,7 +71,7 @@ export function DogRegistration() {
   const behaviorValue = watch('behavior');
   return (
     <AppLayout container>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto py-8 md:py-12">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -128,7 +127,7 @@ export function DogRegistration() {
             </div>
             <div className="space-y-4">
               <Label className="font-black text-lg text-foreground">Health & Safety</Label>
-              <div 
+              <div
                 onClick={handleMockUpload}
                 className={`border-4 border-dashed rounded-xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer ${hasUploaded ? 'bg-playful-green/10 border-playful-green shadow-solid-sm' : 'bg-muted/30 border-black/30 hover:bg-muted/50'}`}
               >

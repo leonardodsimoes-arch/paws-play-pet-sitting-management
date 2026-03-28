@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Loader2, Clock, CalendarIcon } from 'lucide-react';
+import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
-import { Dog } from '@shared/types';
+import { Dog as DogType } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
 export function BookingFlow() {
@@ -18,7 +18,7 @@ export function BookingFlow() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: dogs = [], isLoading: loadingDogs } = useQuery({
     queryKey: ['dogs'],
-    queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
+    queryFn: () => api<{ items: DogType[] }>('/api/dogs').then(res => res.items)
   });
   const services = [
     { id: 'stay', name: 'Basic Stay', price: 45, time: '7 AM - 7 AM', desc: 'Overnight Boarding' },
@@ -55,7 +55,7 @@ export function BookingFlow() {
   const selectedService = services.find(s => s.id === service);
   return (
     <AppLayout container>
-      <div className="space-y-12">
+      <div className="space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
         <header className="text-center">
           <h1 className="text-5xl font-black italic tracking-tighter">PLAN A PLAYDATE</h1>
           <p className="text-xl font-bold text-muted-foreground mt-2">Pick your service and dates below</p>
@@ -65,7 +65,7 @@ export function BookingFlow() {
             <div className="playful-card p-8 bg-white space-y-8">
               <div className="space-y-3">
                 <Label className="font-black text-xl flex items-center gap-2">
-                  <Dog size={24} className="text-playful-pink" /> Who is visiting?
+                  <DogIcon size={24} className="text-playful-pink" /> Who is visiting?
                 </Label>
                 <Select onValueChange={setSelectedDog} disabled={loadingDogs}>
                   <SelectTrigger className="playful-input h-14 font-black text-lg border-black">
@@ -84,11 +84,12 @@ export function BookingFlow() {
                   {services.map(s => (
                     <button
                       key={s.id}
+                      type="button"
                       onClick={() => setService(s.id)}
                       className={cn(
                         "text-left p-6 border-4 border-black rounded-2xl transition-all relative overflow-hidden group",
-                        service === s.id 
-                          ? 'bg-playful-yellow shadow-solid-sm translate-x-[2px] translate-y-[2px]' 
+                        service === s.id
+                          ? 'bg-playful-yellow shadow-solid-sm translate-x-[2px] translate-y-[2px]'
                           : 'bg-white shadow-solid hover:bg-muted/50'
                       )}
                     >
@@ -125,7 +126,7 @@ export function BookingFlow() {
               </div>
             </div>
           </div>
-          <div className="space-y-6 sticky top-8">
+          <div className="space-y-6 lg:sticky lg:top-8">
             <div className="playful-card p-8 bg-playful-blue text-white space-y-8">
               <h2 className="text-3xl font-black italic flex items-center gap-3">
                 <Calculator strokeWidth={3} /> SUMMARY
@@ -140,10 +141,10 @@ export function BookingFlow() {
                   <span>{selectedService?.name || '---'}</span>
                 </div>
                 {selectedService && (
-                  <div className="p-3 bg-black/10 rounded-xl border border-white/10 text-xs">
+                  <div className="p-3 bg-black/10 rounded-xl border border-white/10 text-xs text-white">
                     <p className="font-black uppercase tracking-widest text-[10px] mb-1 opacity-60">Check-out Rule</p>
-                    <p>{selectedService.id === 'stay' ? '7:00 AM Next Day' : 
-                        selectedService.id === 'daycare' ? '7:00 PM Same Day' : 
+                    <p>{selectedService.id === 'stay' ? '7:00 AM Next Day' :
+                        selectedService.id === 'daycare' ? '7:00 PM Same Day' :
                         '30 mins post-arrival'}</p>
                   </div>
                 )}

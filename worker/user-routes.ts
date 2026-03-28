@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { UserEntity, DogEntity, BookingEntity, InvoiceEntity, ChatBoardEntity } from "./entities";
-import { ok, bad, notFound, isStr } from './core-utils';
-import type { User, Dog, Booking, Invoice } from "@shared/types";
+import { ok, bad, notFound } from './core-utils';
+import type { Dog, Booking, Invoice } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // USERS
   app.get('/api/users', async (c) => {
@@ -52,11 +52,32 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     });
     return ok(c, booking);
   });
+  app.patch('/api/bookings/:id', async (c) => {
+    const id = c.req.param('id');
+    const patch = await c.req.json();
+    const entity = new BookingEntity(c.env, id);
+    if (!(await entity.exists())) return notFound(c, 'Booking not found');
+    const updated = await entity.mutate(s => ({ ...s, ...patch }));
+    return ok(c, updated);
+  });
+  app.delete('/api/bookings/:id', async (c) => {
+    const id = c.req.param('id');
+    const okDel = await BookingEntity.delete(c.env, id);
+    return okDel ? ok(c, { id }) : notFound(c);
+  });
   // INVOICES
   app.get('/api/invoices', async (c) => {
     await InvoiceEntity.ensureSeed(c.env);
     const page = await InvoiceEntity.list(c.env, c.req.query('cursor'), Number(c.req.query('limit')) || 50);
     return ok(c, page);
+  });
+  app.patch('/api/invoices/:id', async (c) => {
+    const id = c.req.param('id');
+    const patch = await c.req.json();
+    const entity = new InvoiceEntity(c.env, id);
+    if (!(await entity.exists())) return notFound(c, 'Invoice not found');
+    const updated = await entity.mutate(s => ({ ...s, ...patch }));
+    return ok(c, updated);
   });
   // CHATS
   app.get('/api/chats', async (c) => {
