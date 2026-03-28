@@ -9,10 +9,10 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { Dog as DogType } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { cn } from '@/lib/utils';
+import { cn, parseLocalISO } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
 import { motion } from 'framer-motion';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 export function BookingFlow() {
   const navigate = useNavigate();
   const userId = useAuthStore(s => s.user?.id);
@@ -38,8 +38,8 @@ export function BookingFlow() {
       return { total: price, units: 1, label: walkDuration === '60' ? '60 min walk' : '30 min walk', isValid: true };
     }
     if (!checkOutDate) return { total: 0, units: 0, label: '', isValid: false };
-    const start = parseISO(checkInDate);
-    const end = parseISO(checkOutDate);
+    const start = parseLocalISO(checkInDate);
+    const end = parseLocalISO(checkOutDate);
     const days = differenceInDays(end, start);
     if (service === 'stay') {
       if (days < 1) return { total: 0, units: 0, label: 'Invalid Range', isValid: false };
@@ -56,7 +56,7 @@ export function BookingFlow() {
       toast.error("Oops!", { description: "Please fill in all details first." });
       return;
     }
-    if (service === 'stay' && (!checkOutDate || differenceInDays(parseISO(checkOutDate), parseISO(checkInDate)) < 1)) {
+    if (service === 'stay' && (!checkOutDate || differenceInDays(parseLocalISO(checkOutDate), parseLocalISO(checkInDate)) < 1)) {
       toast.error("Invalid Stay", { 
         description: "Boarding requires at least one night (Check-out must be after Check-in day).",
         icon: <AlertCircle className="text-playful-pink" />
@@ -69,7 +69,6 @@ export function BookingFlow() {
     }
     setIsSubmitting(true);
     try {
-      // Use local ISO format without 'Z' to avoid UTC shifts in the worker if it parses strictly
       const startDateStr = `${checkInDate}T07:00:00`;
       let endDateStr = startDateStr;
       if (service === 'stay') {
@@ -138,8 +137,8 @@ export function BookingFlow() {
                       }}
                       className={cn(
                         "text-left p-6 border-4 border-black rounded-2xl transition-all relative overflow-hidden group",
-                        service === s.id
-                          ? 'bg-playful-yellow shadow-solid-sm translate-x-[2px] translate-y-[2px]'
+                        service === s.id 
+                          ? 'bg-playful-yellow shadow-solid-sm translate-x-[2px] translate-y-[2px]' 
                           : 'bg-white shadow-solid hover:bg-muted/50'
                       )}
                     >

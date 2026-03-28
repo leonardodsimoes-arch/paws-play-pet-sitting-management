@@ -8,11 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Mail, Dog as DogIcon, Calendar, CreditCard, PlusCircle, Loader2, Sparkles, Phone, MapPin, LifeBuoy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { parseISO } from 'date-fns';
-const parseLocalISO = (isoString: string) => {
-  if (!isoString) return new Date();
-  return parseISO(isoString.replace('Z', ''));
-};
+import { parseLocalISO } from '@/lib/utils';
 export function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -66,8 +62,8 @@ export function AdminUserDetail() {
           <Button variant="ghost" onClick={() => navigate(-1)} className="font-black hover:bg-playful-yellow/20 rounded-xl px-4">
             <ChevronLeft className="mr-2" strokeWidth={3} /> All Parents
           </Button>
-          <Button
-            onClick={handleManualInvoice}
+          <Button 
+            onClick={handleManualInvoice} 
             disabled={invoiceMutation.isPending}
             className="playful-btn bg-playful-pink text-white border-black h-12"
           >
