@@ -10,8 +10,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Dog as DogType } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/use-auth-store';
 export function BookingFlow() {
   const navigate = useNavigate();
+  const userId = useAuthStore(s => s.user?.id);
   const [selectedDog, setSelectedDog] = useState('');
   const [service, setService] = useState('');
   const [date, setDate] = useState('');
@@ -31,16 +33,23 @@ export function BookingFlow() {
       return;
     }
     const selectedService = services.find(s => s.id === service);
+    const arrivalDate = new Date(date);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    if (arrivalDate < now) {
+      toast.error("Invalid Date", { description: "Paws can't travel back in time!" });
+      return;
+    }
     setIsSubmitting(true);
     try {
       await api('/api/bookings', {
         method: 'POST',
         body: JSON.stringify({
           dogId: selectedDog,
-          ownerId: 'u1',
+          ownerId: userId,
           serviceType: service,
           startDate: date,
-          endDate: service === 'stay' ? new Date(new Date(date).getTime() + 86400000).toISOString() : date,
+          endDate: service === 'stay' ? new Date(arrivalDate.getTime() + 86400000).toISOString() : date,
           total: selectedService?.price || 0
         })
       });
@@ -113,13 +122,12 @@ export function BookingFlow() {
                 <Label className="font-black text-xl flex items-center gap-2">
                   <CalendarIcon size={24} className="text-playful-blue" /> Choose Arrival Date
                 </Label>
-                <div className="relative group">
-                  <input
-                    type="date"
-                    onChange={(e) => setDate(e.target.value)}
-                    className="playful-input w-full h-16 font-black text-2xl uppercase tracking-tighter border-black focus:bg-playful-blue/5 transition-colors"
-                  />
-                </div>
+                <input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="playful-input w-full h-16 font-black text-2xl uppercase tracking-tighter border-black focus:bg-playful-blue/5 transition-colors"
+                />
                 <p className="text-sm font-bold text-muted-foreground italic">
                   * Arrival time for all services is 7:00 AM.
                 </p>

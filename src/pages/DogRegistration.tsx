@@ -12,6 +12,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { useAuthStore } from '@/store/use-auth-store';
+import { motion } from 'framer-motion';
 const dogSchema = z.object({
   name: z.string().min(1, "Name is required"),
   breed: z.string().min(1, "Breed is required"),
@@ -25,6 +27,7 @@ const dogSchema = z.object({
 type DogFormValues = z.infer<typeof dogSchema>;
 export function DogRegistration() {
   const navigate = useNavigate();
+  const userId = useAuthStore(s => s.user?.id);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasUploaded, setHasUploaded] = useState(false);
@@ -42,13 +45,17 @@ export function DogRegistration() {
     }
   });
   const onSubmit: SubmitHandler<DogFormValues> = async (data) => {
+    if (!userId) {
+      toast.error("Session missing. Please login again.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       await api('/api/dogs', {
         method: 'POST',
         body: JSON.stringify({
           ...data,
-          ownerId: 'u1',
+          ownerId: userId,
         })
       });
       toast.success("Dog registered successfully!", { description: `${data.name} is ready for some fluffy fun!` });
@@ -70,7 +77,11 @@ export function DogRegistration() {
   };
   return (
     <AppLayout container>
-      <div className="max-w-3xl mx-auto py-8 md:py-12">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-3xl mx-auto py-8 md:py-12"
+      >
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -121,8 +132,8 @@ export function DogRegistration() {
                     className="grid grid-cols-2 gap-4"
                   >
                     {['friendly', 'shy', 'aggressive', 'reactive'].map((type) => (
-                      <div 
-                        key={type} 
+                      <div
+                        key={type}
                         className={`flex items-center space-x-2 border-4 border-black rounded-xl p-4 font-black transition-colors ${field.value === type ? 'bg-playful-blue text-white' : 'bg-white'}`}
                       >
                         <RadioGroupItem value={type} id={type} className="border-2 border-black bg-white" />
@@ -152,7 +163,6 @@ export function DogRegistration() {
             </div>
             <div className="space-y-2">
               <Label className="font-black text-lg text-foreground">Dietary Needs</Label>
-              <span className="text-xs font-bold text-muted-foreground block -mt-1 mb-2">Required for the snack bar!</span>
               <Textarea {...register('diet')} placeholder="Describe food type, timing, and allergies..." className="playful-input min-h-[100px]" />
               {errors.diet && <p className="text-playful-pink font-bold text-sm">{errors.diet.message}</p>}
             </div>
@@ -169,7 +179,7 @@ export function DogRegistration() {
             </div>
           </form>
         </div>
-      </div>
+      </motion.div>
     </AppLayout>
   );
 }

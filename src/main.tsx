@@ -18,6 +18,8 @@ import { DogDetail } from '@/pages/DogDetail';
 import { BookingFlow } from '@/pages/BookingFlow';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminBilling } from '@/pages/AdminBilling';
+import { AdminUsers } from '@/pages/AdminUsers';
+import { AdminUserDetail } from '@/pages/AdminUserDetail';
 import { LoginPage } from '@/pages/LoginPage';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 const queryClient = new QueryClient({
@@ -67,6 +69,16 @@ const router = createBrowserRouter([
   {
     path: "/admin/billing",
     element: <AuthGuard allowedRoles={["admin"]}><AdminBilling /></AuthGuard>,
+    errorElement: <RouteErrorBoundary />
+  },
+  {
+    path: "/admin/clients",
+    element: <AuthGuard allowedRoles={["admin"]}><AdminUsers /></AuthGuard>,
+    errorElement: <RouteErrorBoundary />
+  },
+  {
+    path: "/admin/clients/:id",
+    element: <AuthGuard allowedRoles={["admin"]}><AdminUserDetail /></AuthGuard>,
     errorElement: <RouteErrorBoundary />
   },
 ]);
