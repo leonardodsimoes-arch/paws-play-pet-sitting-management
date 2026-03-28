@@ -14,6 +14,7 @@ import '@/index.css'
 import { HomePage } from '@/pages/HomePage';
 import { ClientDashboard } from '@/pages/ClientDashboard';
 import { DogRegistration } from '@/pages/DogRegistration';
+import { DogDetail } from '@/pages/DogDetail';
 import { BookingFlow } from '@/pages/BookingFlow';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { AdminBilling } from '@/pages/AdminBilling';
@@ -26,35 +27,40 @@ const queryClient = new QueryClient({
   },
 });
 const router = createBrowserRouter([
-  { 
-    path: "/", 
-    element: <HomePage />, 
-    errorElement: <RouteErrorBoundary /> 
+  {
+    path: "/",
+    element: <HomePage />,
+    errorElement: <RouteErrorBoundary />
   },
-  { 
-    path: "/dashboard", 
-    element: <ClientDashboard />, 
-    errorElement: <RouteErrorBoundary /> 
+  {
+    path: "/dashboard",
+    element: <ClientDashboard />,
+    errorElement: <RouteErrorBoundary />
   },
-  { 
-    path: "/dogs/new", 
-    element: <DogRegistration />, 
-    errorElement: <RouteErrorBoundary /> 
+  {
+    path: "/dogs/new",
+    element: <DogRegistration />,
+    errorElement: <RouteErrorBoundary />
   },
-  { 
-    path: "/book", 
-    element: <BookingFlow />, 
-    errorElement: <RouteErrorBoundary /> 
+  {
+    path: "/dogs/:id",
+    element: <DogDetail />,
+    errorElement: <RouteErrorBoundary />
   },
-  { 
-    path: "/admin", 
-    element: <AdminDashboard />, 
-    errorElement: <RouteErrorBoundary /> 
+  {
+    path: "/book",
+    element: <BookingFlow />,
+    errorElement: <RouteErrorBoundary />
   },
-  { 
-    path: "/admin/billing", 
-    element: <AdminBilling />, 
-    errorElement: <RouteErrorBoundary /> 
+  {
+    path: "/admin",
+    element: <AdminDashboard />,
+    errorElement: <RouteErrorBoundary />
+  },
+  {
+    path: "/admin/billing",
+    element: <AdminBilling />,
+    errorElement: <RouteErrorBoundary />
   },
 ]);
 createRoot(document.getElementById('root')!).render(

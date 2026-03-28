@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Calendar, Dog as DogIcon, Heart } from 'lucide-react';
+import { Plus, Calendar, Dog as DogIcon, Heart, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -28,10 +28,10 @@ export function ClientDashboard() {
             <p className="font-bold text-muted-foreground">Manage your beloved pack</p>
           </div>
           <div className="flex gap-4">
-            <Button asChild className="playful-btn bg-playful-green hover:bg-playful-green/90 text-black">
+            <Button asChild className="playful-btn bg-playful-green hover:bg-playful-green/90 text-black border-black">
               <Link to="/dogs/new"><Plus className="mr-2" /> Add Friend</Link>
             </Button>
-            <Button asChild className="playful-btn bg-playful-pink hover:bg-playful-pink/90 text-white">
+            <Button asChild className="playful-btn bg-playful-pink hover:bg-playful-pink/90 text-white border-black">
               <Link to="/book"><Calendar className="mr-2" /> Book Service</Link>
             </Button>
           </div>
@@ -44,22 +44,33 @@ export function ClientDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 border-4 border-black rounded-2xl" />)}
             </div>
+          ) : dogs.length === 0 ? (
+            <div className="playful-card p-12 text-center bg-muted/20 border-dashed">
+              <DogIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-2xl font-black mb-2">No buddies yet!</h3>
+              <p className="font-bold text-muted-foreground mb-6">Start by adding your first fluffy friend to the pack.</p>
+              <Button asChild className="playful-btn bg-playful-yellow text-black border-black">
+                <Link to="/dogs/new">Register a Dog</Link>
+              </Button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {dogs.map((dog) => (
                 <motion.div
                   key={dog.id}
                   whileHover={{ scale: 1.02 }}
-                  className="playful-card p-6 space-y-4 overflow-hidden relative"
+                  className="playful-card p-6 space-y-4 overflow-hidden relative group"
                 >
-                  <div className="absolute -top-4 -right-4 w-20 h-20 bg-playful-yellow/20 rounded-full" />
+                  <div className="absolute -top-4 -right-4 w-20 h-20 bg-playful-yellow/20 rounded-full group-hover:bg-playful-yellow/40 transition-colors" />
                   <h3 className="text-2xl font-black">{dog.name}</h3>
                   <div className="space-y-1 text-sm font-bold">
                     <p className="text-muted-foreground">Breed: <span className="text-black">{dog.breed}</span></p>
                     <p className="text-muted-foreground">Age: <span className="text-black">{dog.age} years</span></p>
                     <p className="text-muted-foreground">Vibe: <span className="text-black capitalize">{dog.behavior}</span></p>
                   </div>
-                  <Button variant="outline" className="w-full border-2 border-black font-bold hover:bg-playful-blue/10">Edit Profile</Button>
+                  <Button asChild variant="outline" className="w-full border-2 border-black font-black hover:bg-playful-blue/10">
+                    <Link to={`/dogs/${dog.id}`}>View Details <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  </Button>
                 </motion.div>
               ))}
             </div>
@@ -69,7 +80,7 @@ export function ClientDashboard() {
           <h2 className="text-2xl font-black mb-6 flex items-center gap-2">
             <Calendar className="text-playful-pink" /> Upcoming Fun
           </h2>
-          <div className="playful-card overflow-hidden">
+          <div className="playful-card overflow-hidden bg-white">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-muted border-b-4 border-black font-black">
@@ -82,7 +93,9 @@ export function ClientDashboard() {
                 </thead>
                 <tbody className="font-bold">
                   {bookingsLoading ? (
-                    <tr><td colSpan={4} className="px-6 py-8 text-center"><Loader2 className="animate-spin mx-auto" /></td></tr>
+                    <tr><td colSpan={4} className="px-6 py-8 text-center"><Loader2 className="animate-spin mx-auto text-playful-pink" /></td></tr>
+                  ) : bookings.length === 0 ? (
+                    <tr><td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">No upcoming bookings scheduled.</td></tr>
                   ) : bookings.map((booking) => {
                     const dog = dogs.find(d => d.id === booking.dogId);
                     return (
