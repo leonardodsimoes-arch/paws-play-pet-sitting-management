@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Heart, Dog, CreditCard, LayoutDashboard, Star, LogOut, User as UserIcon } from "lucide-react";
+import { Home, Heart, Dog, CreditCard, LayoutDashboard, Star, LogOut, User as UserIcon, Users } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/use-auth-store";
 import {
@@ -63,6 +63,13 @@ export function AppSidebar(): JSX.Element {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === "/admin/clients"}>
+                        <Link to="/admin/clients" className="font-bold py-6 px-4 flex gap-3">
+                          <Users className="h-5 w-5" /> <span>Client Roster</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/admin/billing"}>
                         <Link to="/admin/billing" className="font-bold py-6 px-4 flex gap-3">
                           <CreditCard className="h-5 w-5" /> <span>Fluffy Billing</span>
@@ -104,18 +111,18 @@ export function AppSidebar(): JSX.Element {
       <SidebarFooter className="p-4 border-t-4 border-black/5">
         {isAuthenticated ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 px-2">
+            <div className="flex items-center gap-3 p-3 bg-white border-2 border-black rounded-2xl shadow-solid-sm">
               <div className="h-10 w-10 rounded-full bg-playful-yellow border-2 border-black flex items-center justify-center font-black">
                 {user?.name?.[0]}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-black truncate">{user?.name}</p>
-                <p className="text-[10px] font-bold uppercase text-muted-foreground">{user?.role}</p>
+                <p className="text-sm font-black truncate leading-tight">{user?.name}</p>
+                <p className="text-[10px] font-black uppercase text-playful-blue tracking-tighter">{user?.role}</p>
               </div>
             </div>
-            <Button 
+            <Button
               onClick={handleLogout}
-              variant="outline" 
+              variant="outline"
               className="w-full border-2 border-black font-black hover:bg-playful-pink hover:text-white transition-colors h-10 rounded-xl flex items-center justify-center gap-2"
             >
               <LogOut size={16} /> Logout
