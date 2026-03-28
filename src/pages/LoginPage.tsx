@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Dog, KeyRound, Mail, Loader2, Sparkles, Info } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Dog, KeyRound, Mail, Loader2, Sparkles, Info, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -96,6 +96,14 @@ export function LoginPage() {
             {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "LOG IN"}
           </Button>
         </form>
+        <div className="text-center pt-2">
+          <p className="font-bold text-muted-foreground">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-playful-blue hover:underline font-black inline-flex items-center gap-1">
+              Join the Pack <ArrowRight size={16} />
+            </Link>
+          </p>
+        </div>
         <div className="p-4 bg-playful-yellow/20 rounded-2xl border-2 border-black/10 space-y-2">
           <p className="text-xs font-black uppercase flex items-center gap-2 text-playful-blue">
             <Info size={14} /> Demo Access

@@ -51,7 +51,7 @@ export function HomePage() {
                 <Link to="/login">Pack Login</Link>
               </Button>
               <Button asChild className="playful-btn bg-playful-blue hover:bg-playful-blue/90 text-white text-xl h-16">
-                <Link to="/dashboard">Join the Pack</Link>
+                <Link to="/register">Join the Pack</Link>
               </Button>
             </>
           )}
