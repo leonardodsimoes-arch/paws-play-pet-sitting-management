@@ -77,13 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun install crypto",
-    "bun install date-fns",
-    "bun add -d vite@8.0.8 @vitejs/plugin-react@6.0.1",
-    "bun install typescript@^5.8.0 @types/node --save-dev",
-    "bun add date-fns@^3.6.0"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
