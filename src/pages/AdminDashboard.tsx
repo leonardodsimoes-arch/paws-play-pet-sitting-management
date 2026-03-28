@@ -30,11 +30,13 @@ export function AdminDashboard() {
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
-  const today = new Date().toISOString().split('T')[0];
-  const activeBookings = bookings.filter(b => 
-    b.status === 'confirmed' || 
-    (b.startDate && b.startDate.startsWith(today))
-  );
+  const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const activeBookings = bookings.filter(b => {
+    if (b.status === 'cancelled') return false;
+    const start = b.startDate?.split('T')[0];
+    const end = b.endDate?.split('T')[0];
+    return start === todayStr || end === todayStr;
+  });
   if (dogsLoading || bookingsLoading) {
     return (
       <AppLayout container>
@@ -78,11 +80,12 @@ export function AdminDashboard() {
           <section className="space-y-6">
             <h2 className="text-3xl font-black italic tracking-tight uppercase">Daily Schedule</h2>
             <div className="space-y-4">
-              {bookings.length === 0 ? (
-                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">No activities scheduled.</div>
-              ) : bookings.map(booking => {
+              {activeBookings.length === 0 ? (
+                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">No activities scheduled for today.</div>
+              ) : activeBookings.map(booking => {
                 const dog = dogs.find(d => d.id === booking.dogId);
                 const colorMap = { stay: 'bg-playful-pink', daycare: 'bg-playful-yellow', walk: 'bg-playful-blue' };
+                const isArriving = booking.startDate?.split('T')[0] === todayStr;
                 return (
                   <div key={booking.id} className="playful-card p-5 flex items-center justify-between bg-white group hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-5">
@@ -94,7 +97,9 @@ export function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
                           <span className="w-1 h-1 bg-black/20 rounded-full" />
-                          <span className="text-[10px] font-bold text-playful-blue uppercase">Arriving 7 AM</span>
+                          <span className={`text-[10px] font-bold uppercase ${isArriving ? 'text-playful-green' : 'text-playful-pink'}`}>
+                            {isArriving ? 'Arriving 7 AM' : 'Departing 7 AM'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -116,7 +121,6 @@ export function AdminDashboard() {
                         </div>
                       )}
                       <div className="text-right">
-                        <p className="font-black text-xs italic opacity-60">{booking.startDate ? new Date(booking.startDate).toLocaleDateString() : 'TBD'}</p>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
                           {booking.status}
                         </span>
@@ -130,9 +134,9 @@ export function AdminDashboard() {
           <section className="space-y-6">
             <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase">Care & Safety Notices</h2>
             <div className="space-y-4">
-              {dogs.filter(d => d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()).length === 0 ? (
-                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">All clear! No safety notices today.</div>
-              ) : dogs.filter(d => d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()).map(dog => (
+              {dogs.filter(d => (d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()) && activeBookings.some(b => b.dogId === d.id)).length === 0 ? (
+                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">All clear for today's visitors!</div>
+              ) : dogs.filter(d => (d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()) && activeBookings.some(b => b.dogId === d.id)).map(dog => (
                 <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
                   <div className="flex items-start gap-4">
                     <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white">

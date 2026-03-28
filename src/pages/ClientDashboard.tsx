@@ -23,16 +23,19 @@ export function ClientDashboard() {
     queryKey: ['invoices'],
     queryFn: () => api<{ items: Invoice[] }>('/api/invoices').then(res => res.items)
   });
-  const cancelMutation = useMutation({
-    mutationFn: (id: string) => api(`/api/bookings/${id}`, { method: 'DELETE' }),
+  const payMutation = useMutation({
+    mutationFn: (id: string) => api(`/api/invoices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'paid' })
+    }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      toast.success("Booking Cancelled");
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success("Payment Received!", { description: "Thank you! Your fluffy credit is updated." });
     },
-    onError: (err) => toast.error("Cancellation failed", { description: String(err) })
+    onError: (err) => toast.error("Payment failed", { description: String(err) })
   });
   const handlePay = (invoiceId: string) => {
-    toast.success("Payment Received!", { description: "Thank you! Your fluffy credit is updated." });
+    payMutation.mutate(invoiceId);
   };
   return (
     <AppLayout container>
@@ -103,18 +106,24 @@ export function ClientDashboard() {
                       </tr>
                     </thead>
                     <tbody className="font-bold">
-                      {bookings.map((booking) => (
-                        <tr key={booking.id} className="border-b-2 border-black/5 last:border-0">
-                          <td className="px-6 py-4">{dogs.find(d => d.id === booking.dogId)?.name || '...'}</td>
-                          <td className="px-6 py-4 capitalize">{booking.serviceType}</td>
-                          <td className="px-6 py-4">{new Date(booking.startDate).toLocaleDateString()}</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
-                              {booking.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {bookingsLoading ? (
+                        <tr><td colSpan={4} className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></td></tr>
+                      ) : bookings.length === 0 ? (
+                        <tr><td colSpan={4} className="p-8 text-center text-muted-foreground italic">No fun planned yet!</td></tr>
+                      ) : (
+                        bookings.map((booking) => (
+                          <tr key={booking.id} className="border-b-2 border-black/5 last:border-0">
+                            <td className="px-6 py-4">{dogs.find(d => d.id === booking.dogId)?.name || '...'}</td>
+                            <td className="px-6 py-4 capitalize">{booking.serviceType}</td>
+                            <td className="px-6 py-4">{new Date(booking.startDate).toLocaleDateString()}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
+                                {booking.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -143,11 +152,12 @@ export function ClientDashboard() {
                         <CheckCircle2 size={16} /> PAID
                       </div>
                     ) : (
-                      <Button 
+                      <Button
                         onClick={() => handlePay(invoice.id)}
+                        disabled={payMutation.isPending}
                         className="playful-btn w-full bg-playful-green text-black border-black h-10 text-sm font-black"
                       >
-                        PAY NOW
+                        {payMutation.isPending && payMutation.variables === invoice.id ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : 'PAY NOW'}
                       </Button>
                     )}
                   </div>

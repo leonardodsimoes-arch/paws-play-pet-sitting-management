@@ -132,10 +132,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   app.patch('/api/invoices/:id', async (c) => {
     const user = await getAuthUser(c);
-    if (!user || user.role !== 'admin') return c.json({ success: false, error: 'Unauthorized' }, 401);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
     const id = c.req.param('id');
     const patch = await c.req.json();
     const entity = new InvoiceEntity(c.env, id);
+    if (!(await entity.exists())) return notFound(c);
+    const current = await entity.getState();
+    if (user.role === 'client' && current.ownerId !== user.id) return c.json({ success: false, error: 'Forbidden' }, 403);
     const updated = await entity.mutate(s => ({ ...s, ...patch }));
     return ok(c, updated);
   });
