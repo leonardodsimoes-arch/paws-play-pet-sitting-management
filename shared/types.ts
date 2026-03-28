@@ -9,6 +9,13 @@ export interface User {
   email: string;
   role: 'client' | 'admin';
   password?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  emergencyName?: string;
+  emergencyPhone?: string;
 }
 export interface AuthResponse {
   user: User;
@@ -22,6 +29,13 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  emergencyName?: string;
+  emergencyPhone?: string;
 }
 export interface Dog {
   id: string;

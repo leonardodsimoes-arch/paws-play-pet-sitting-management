@@ -17,7 +17,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/auth/login', async (c) => {
     try {
       const { email, password } = await c.req.json() as LoginPayload;
-      // Only seed if the user index is empty to prevent data loss on re-login
       const userIndex = new Index<string>(c.env, UserEntity.indexName);
       const existingUserIds = await userIndex.list();
       if (existingUserIds.length === 0) {
@@ -115,13 +114,24 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, booking);
   });
   app.post('/api/auth/register', async (c) => {
-    const { name, email, password } = await c.req.json() as any;
+    const { 
+      name, email, password, phone, 
+      address, city, state, zip, 
+      emergencyName, emergencyPhone 
+    } = await c.req.json() as any;
     if (!name || !email || !password) return bad(c, 'Missing required fields');
     const usersPage = await UserEntity.list(c.env);
     if (usersPage.items.some(u => u.email === email)) return bad(c, 'Email already in use');
     const user = await UserEntity.create(c.env, {
       id: crypto.randomUUID(),
-      name, email, role: 'client', password
+      name, email, role: 'client', password,
+      phone: phone || "",
+      address: address || "",
+      city: city || "",
+      state: state || "",
+      zip: zip || "",
+      emergencyName: emergencyName || "",
+      emergencyPhone: emergencyPhone || ""
     });
     return ok(c, user);
   });
