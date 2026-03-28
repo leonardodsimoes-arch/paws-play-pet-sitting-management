@@ -12,7 +12,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
 import { motion } from 'framer-motion';
-import { differenceInDays, parseISO, addDays, format } from 'date-fns';
+import { differenceInDays, parseISO } from 'date-fns';
 export function BookingFlow() {
   const navigate = useNavigate();
   const userId = useAuthStore(s => s.user?.id);
@@ -116,10 +116,9 @@ export function BookingFlow() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           <div className="lg:col-span-2 space-y-8">
             <div className="playful-card p-8 bg-white space-y-8">
-              {/* Dog Selection */}
               <div className="space-y-3">
                 <Label className="font-black text-xl flex items-center gap-2">
-                  <DogIcon size={24} className="text-playful-pink" /> Who is visiting?
+                  <DogIcon size={24} className="text-playful-pink" strokeWidth={3} /> Who is visiting?
                 </Label>
                 <Select onValueChange={setSelectedDog} disabled={loadingDogs}>
                   <SelectTrigger className="playful-input h-14 font-black text-lg border-black">
@@ -132,7 +131,6 @@ export function BookingFlow() {
                   </SelectContent>
                 </Select>
               </div>
-              {/* Service Selection */}
               <div className="space-y-4">
                 <Label className="font-black text-xl">Select Service Package</Label>
                 <div className="grid grid-cols-1 gap-4">
@@ -156,7 +154,7 @@ export function BookingFlow() {
                           <div className="flex items-center gap-2">
                             <span className="font-black text-2xl uppercase tracking-tighter">{s.name}</span>
                             <span className="bg-black text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
-                              <Clock size={10} /> {s.time}
+                              <Clock size={10} strokeWidth={3} /> {s.time}
                             </span>
                           </div>
                           <p className="font-bold text-muted-foreground mt-1">{s.desc}</p>
@@ -169,14 +167,13 @@ export function BookingFlow() {
                   ))}
                 </div>
               </div>
-              {/* Date Selection */}
               {service && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                   {service === 'walk' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
-                          <CalendarIcon size={24} className="text-playful-blue" /> Date
+                          <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> Date
                         </Label>
                         <input
                           type="date"
@@ -187,7 +184,7 @@ export function BookingFlow() {
                       </div>
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
-                          <Clock size={24} className="text-playful-pink" /> Duration
+                          <Clock size={24} className="text-playful-pink" strokeWidth={3} /> Duration
                         </Label>
                         <Select onValueChange={setWalkDuration} defaultValue="30">
                           <SelectTrigger className="playful-input h-14 font-black border-black">
@@ -204,7 +201,7 @@ export function BookingFlow() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
-                          <CalendarIcon size={24} className="text-playful-blue" /> Check-in Date
+                          <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> Check-in Date
                         </Label>
                         <input
                           type="date"
@@ -215,7 +212,7 @@ export function BookingFlow() {
                       </div>
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
-                          <ArrowRight size={24} className="text-playful-green" /> Check-out Date
+                          <ArrowRight size={24} className="text-playful-green" strokeWidth={3} /> Check-out Date
                         </Label>
                         <input
                           type="date"
@@ -227,45 +224,44 @@ export function BookingFlow() {
                     </div>
                   )}
                   <p className="text-sm font-bold text-muted-foreground italic">
-                    * {service === 'stay' ? 'Check-out time is strictly 7:00 AM.' : service === 'daycare' ? 'Check-out time is strictly 7:00 PM.' : 'Walk starts at 7:00 AM.'}
+                    * {service === 'stay' ? 'Stay check-out is strictly 7:00 AM.' : service === 'daycare' ? 'Daycare check-out is 7:00 PM.' : 'Walk timing starts at 7:00 AM.'}
                   </p>
                 </motion.div>
               )}
             </div>
           </div>
-          {/* Summary Sidebar */}
           <div className="space-y-6 lg:sticky lg:top-8">
-            <div className="playful-card p-8 bg-playful-blue text-white space-y-8">
+            <div className="playful-card p-8 bg-playful-blue text-white space-y-8 border-4 border-black shadow-solid">
               <h2 className="text-3xl font-black italic flex items-center gap-3">
                 <Calculator strokeWidth={3} /> SUMMARY
               </h2>
-              <div className="space-y-4 font-bold border-t-4 border-black/20 pt-6">
-                <div className="flex justify-between text-lg">
-                  <span className="opacity-70">Buddy:</span>
-                  <span>{dogs.find(d => d.id === selectedDog)?.name || '---'}</span>
+              <div className="space-y-6 font-bold border-t-4 border-black/20 pt-6">
+                <div className="flex justify-between text-lg items-center">
+                  <span className="opacity-70 text-sm uppercase tracking-widest font-black">Buddy</span>
+                  <span className="italic">{dogs.find(d => d.id === selectedDog)?.name || '---'}</span>
                 </div>
-                <div className="flex justify-between text-lg">
-                  <span className="opacity-70">Service:</span>
-                  <span>{selectedServiceData?.name || '---'}</span>
+                <div className="flex justify-between text-lg items-center">
+                  <span className="opacity-70 text-sm uppercase tracking-widest font-black">Service</span>
+                  <span className="italic uppercase tracking-tighter font-black">{selectedServiceData?.name || '---'}</span>
                 </div>
                 {calculation.units > 0 && (
-                  <div className="flex justify-between text-lg">
-                    <span className="opacity-70">Duration:</span>
-                    <span>{calculation.label}</span>
+                  <div className="flex justify-between text-lg items-center">
+                    <span className="opacity-70 text-sm uppercase tracking-widest font-black">Quantity</span>
+                    <span className="italic">{calculation.label}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-3xl font-black border-t-4 border-black/20 pt-6 mt-6">
-                  <span>TOTAL:</span>
+                <div className="flex justify-between text-4xl font-black border-t-4 border-black/20 pt-6 mt-6">
+                  <span className="italic tracking-tighter">TOTAL</span>
                   <span className="text-playful-yellow">${calculation.total}</span>
                 </div>
               </div>
-              <motion.div animate={isFormComplete && !isSubmitting ? { scale: [1, 1.02, 1] } : {}} transition={{ repeat: Infinity, duration: 2 }}>
+              <motion.div animate={isFormComplete && !isSubmitting ? { scale: [1, 1.05, 1], rotate: [0, 1, -1, 0] } : {}} transition={{ repeat: Infinity, duration: 3 }}>
                 <Button
                   onClick={handleBooking}
                   disabled={!isFormComplete || isSubmitting}
                   className={cn(
                     "playful-btn w-full text-black border-black h-16 text-xl font-black transition-all",
-                    isFormComplete ? "bg-playful-yellow hover:bg-playful-yellow/90" : "bg-muted text-muted-foreground"
+                    isFormComplete ? "bg-playful-yellow hover:bg-playful-yellow/90 hover:scale-105" : "bg-muted text-muted-foreground opacity-50"
                   )}
                 >
                   {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "CONFIRM BOOKING"}

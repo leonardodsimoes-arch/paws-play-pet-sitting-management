@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Dog, Booking } from '@shared/types';
@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isWithinInterval, parseISO, startOfDay, format } from 'date-fns';
+import { isWithinInterval, parseISO, startOfDay, format, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 export function AdminDashboard() {
   const queryClient = useQueryClient();
@@ -31,7 +31,6 @@ export function AdminDashboard() {
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
   const today = startOfDay(new Date());
-  const todayStr = format(today, 'yyyy-MM-dd');
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled') return false;
     const start = startOfDay(parseISO(b.startDate));
@@ -84,23 +83,29 @@ export function AdminDashboard() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <section className="space-y-6">
-            <h2 className="text-3xl font-black italic tracking-tight uppercase">Daily Schedule</h2>
+            <h2 className="text-3xl font-black italic tracking-tight uppercase flex items-center gap-2">
+              <Clock className="text-playful-blue" strokeWidth={3} /> Daily Schedule
+            </h2>
             <div className="space-y-4">
               {activeBookings.length === 0 ? (
                 <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">No activities scheduled for today.</div>
               ) : activeBookings.map(booking => {
                 const dog = dogs.find(d => d.id === booking.dogId);
                 const colorMap = { stay: 'bg-playful-pink', daycare: 'bg-playful-yellow', walk: 'bg-playful-blue' };
-                const startStr = booking.startDate.split('T')[0];
-                const endStr = booking.endDate.split('T')[0];
+                const start = startOfDay(parseISO(booking.startDate));
+                const end = startOfDay(parseISO(booking.endDate));
                 let statusLabel = 'In House';
                 let timeInfo = '';
                 let statusColor = 'bg-playful-blue text-white';
-                if (startStr === todayStr) {
+                if (booking.serviceType === 'daycare' || booking.serviceType === 'walk') {
+                  statusLabel = 'Full Day';
+                  timeInfo = '7 AM - 7 PM';
+                  statusColor = 'bg-playful-green text-black';
+                } else if (isSameDay(start, today)) {
                   statusLabel = 'Arriving';
                   timeInfo = '7:00 AM';
-                  statusColor = 'bg-playful-green text-black';
-                } else if (endStr === todayStr) {
+                  statusColor = 'bg-playful-blue text-white';
+                } else if (isSameDay(end, today)) {
                   statusLabel = 'Departing';
                   timeInfo = '7:00 AM';
                   statusColor = 'bg-playful-pink text-white';
@@ -116,7 +121,7 @@ export function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
                           <span className="w-1 h-1 bg-black/20 rounded-full" />
-                          <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase", statusColor)}>
+                          <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase whitespace-nowrap", statusColor)}>
                             {statusLabel} {timeInfo}
                           </span>
                         </div>
@@ -142,7 +147,7 @@ export function AdminDashboard() {
                       <div className="text-right">
                         <span className={cn(
                           "text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase",
-                          booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'
+                          booking.status === 'confirmed' ? 'bg-playful-green text-black' : 'bg-playful-yellow text-black'
                         )}>
                           {booking.status}
                         </span>
@@ -154,31 +159,33 @@ export function AdminDashboard() {
             </div>
           </section>
           <section className="space-y-6">
-            <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase">Care & Safety Notices</h2>
+            <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase flex items-center gap-2">
+              <AlertTriangle strokeWidth={3} /> Care & Safety Notices
+            </h2>
             <div className="space-y-4">
               {todayCareAlertDogs.length === 0 ? (
                 <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">All clear for today's visitors!</div>
               ) : todayCareAlertDogs.map(dog => (
                 <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
                   <div className="flex items-start gap-4">
-                    <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white">
+                    <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white shrink-0">
                       <AlertTriangle size={24} strokeWidth={3} />
                     </div>
-                    <div className="space-y-4 flex-1">
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-black text-2xl italic tracking-tighter uppercase">{dog.name}</h4>
-                        <Link to={`/dogs/${dog.id}`} className="text-playful-blue font-black text-xs hover:underline flex items-center gap-1 uppercase">
-                          View Profile <ArrowRight size={14} strokeWidth={3} />
+                    <div className="space-y-4 flex-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <h4 className="font-black text-2xl italic tracking-tighter uppercase truncate">{dog.name}</h4>
+                        <Link to={`/dogs/${dog.id}`} className="text-playful-blue font-black text-xs hover:underline flex items-center gap-1 uppercase shrink-0">
+                          Profile <ArrowRight size={14} strokeWidth={3} />
                         </Link>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {(dog.behavior === 'reactive' || dog.behavior === 'aggressive') && (
-                          <span className="bg-playful-pink text-white px-4 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">
+                          <span className="bg-playful-pink text-white px-3 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">
                             {dog.behavior}
                           </span>
                         )}
-                        <span className="bg-playful-blue/10 text-playful-blue px-4 py-1 rounded-full text-[10px] font-black border-2 border-playful-blue/20 flex items-center gap-1 uppercase">
-                          <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet ? dog.diet.slice(0, 20) : 'None'}...
+                        <span className="bg-playful-blue/10 text-playful-blue px-3 py-1 rounded-full text-[10px] font-black border-2 border-playful-blue/20 flex items-center gap-1 uppercase">
+                          <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet ? (dog.diet.length > 20 ? dog.diet.slice(0, 20) + '...' : dog.diet) : 'Standard'}
                         </span>
                       </div>
                       <div className="bg-muted/30 border-4 border-black p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">
