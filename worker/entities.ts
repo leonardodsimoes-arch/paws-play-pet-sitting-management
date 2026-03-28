@@ -1,27 +1,62 @@
-/**
- * Minimal real-world demo: One Durable Object instance per entity (User, ChatBoard), with Indexes for listing.
- */
 import { IndexedEntity } from "./core-utils";
-import type { User, Chat, ChatMessage } from "@shared/types";
-import { MOCK_CHAT_MESSAGES, MOCK_CHATS, MOCK_USERS } from "@shared/mock-data";
-// USER ENTITY: one DO instance per user
+import type { User, Dog, Booking, Invoice, Chat, ChatMessage } from "@shared/types";
+import { MOCK_CHATS, MOCK_USERS, MOCK_DOGS, MOCK_BOOKINGS, MOCK_INVOICES } from "@shared/mock-data";
 export class UserEntity extends IndexedEntity<User> {
   static readonly entityName = "user";
   static readonly indexName = "users";
   static readonly initialState: User = { id: "", name: "", email: "", role: "client" };
   static seedData = MOCK_USERS;
 }
-// CHAT BOARD ENTITY: one DO instance per chat board, stores its own messages
-export type ChatBoardState = Chat;
-const SEED_CHAT_BOARDS: ChatBoardState[] = MOCK_CHATS.map((c: Chat) => ({
-  ...c,
-  messages: MOCK_CHAT_MESSAGES.filter((m: ChatMessage) => m.chatId === c.id),
-}));
-export class ChatBoardEntity extends IndexedEntity<ChatBoardState> {
+export class DogEntity extends IndexedEntity<Dog> {
+  static readonly entityName = "dog";
+  static readonly indexName = "dogs";
+  static readonly initialState: Dog = {
+    id: "",
+    ownerId: "",
+    name: "",
+    breed: "",
+    weight: 0,
+    age: 0,
+    vaccinesUpToDate: false,
+    behavior: "friendly",
+    diet: "",
+    instructions: ""
+  };
+  static seedData = MOCK_DOGS;
+}
+export class BookingEntity extends IndexedEntity<Booking> {
+  static readonly entityName = "booking";
+  static readonly indexName = "bookings";
+  static readonly initialState: Booking = {
+    id: "",
+    dogId: "",
+    ownerId: "",
+    serviceType: "daycare",
+    startDate: "",
+    endDate: "",
+    status: "pending",
+    total: 0
+  };
+  static seedData = MOCK_BOOKINGS;
+}
+export class InvoiceEntity extends IndexedEntity<Invoice> {
+  static readonly entityName = "invoice";
+  static readonly indexName = "invoices";
+  static readonly initialState: Invoice = {
+    id: "",
+    bookingId: "",
+    ownerId: "",
+    amount: 0,
+    status: "unpaid",
+    createdAt: ""
+  };
+  static seedData = MOCK_INVOICES;
+}
+export class ChatBoardEntity extends IndexedEntity<Chat> {
   static readonly entityName = "chat";
   static readonly indexName = "chats";
-  static readonly initialState: ChatBoardState = { id: "", title: "", messages: [] };
-  static seedData = SEED_CHAT_BOARDS;
+  static readonly initialState: Chat = { id: "", title: "", messages: [] };
+  static seedData = MOCK_CHATS;
   async listMessages(): Promise<ChatMessage[]> {
     const { messages } = await this.getState();
     return messages;
