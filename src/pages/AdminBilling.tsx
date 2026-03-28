@@ -61,11 +61,11 @@ export function AdminBilling() {
             </h1>
             <p className="font-bold text-muted-foreground text-lg">Financial Transparency & Revenue</p>
           </div>
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <motion.div whileFocus={{ scale: 1.02 }}>
+          <div className="relative max-w-sm w-full group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" />
+            <motion.div whileFocus={{ scale: 1.02 }} className="relative">
               <Input
-                className="playful-input pl-10 h-12"
+                className="playful-input pl-10 h-12 hover:shadow-solid transition-shadow"
                 placeholder="Search fluffy parents..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -144,7 +144,7 @@ export function AdminBilling() {
                               <DollarSign className="w-5 h-5" />
                             </button>
                           )}
-                          <button 
+                          <button
                             onClick={() => handleDownload(invoice.id)}
                             className="p-2 hover:bg-playful-blue/10 rounded-xl transition-all active:scale-95 border-2 border-transparent hover:border-black/5 text-playful-blue"
                           >
