@@ -29,4 +29,18 @@
   .playful-input {
     @apply border-4 border-black rounded-xl px-4 py-2 bg-white focus:ring-0 focus:outline-none placeholder:text-muted-foreground/50;
   }
+  .animate-pulse-playful {
+    animation: pulse-playful 2s infinite ease-in-out;
+  }
+}
+@keyframes pulse-playful {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.02) rotate(1deg);
+  }
+  75% {
+    transform: scale(1.02) rotate(-1deg);
+  }
 }
