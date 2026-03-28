@@ -3,7 +3,7 @@ import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Dog, Upload, ChevronLeft, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Dog, Upload, ChevronLeft, Loader2, CheckCircle2, Sparkles, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -68,7 +68,7 @@ export function DogRegistration() {
     setIsSubmitting(true);
     try {
       const finalBreed = data.breed === "Other" ? data.otherBreed : data.breed;
-      await api('/api/dogs', {
+      const response = await api<{ id: string }>('/api/dogs', {
         method: 'POST',
         body: JSON.stringify({
           ...data,
@@ -76,11 +76,30 @@ export function DogRegistration() {
           ownerId: userId,
         })
       });
-      toast.success("Dog registered successfully!", {
-        description: `${data.name} is ready for some fluffy fun!`,
-        icon: <Sparkles className="text-playful-yellow" />
-      });
-      navigate('/dashboard');
+      // Visually striking success flow
+      toast.custom((t) => (
+        <div className="bg-white border-4 border-black p-6 rounded-2xl shadow-solid-lg flex items-center gap-6 max-w-md w-full animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-playful-yellow border-4 border-black p-4 rounded-3xl rotate-3 shadow-solid-sm">
+            <Dog className="w-10 h-10 text-black" strokeWidth={3} />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-2xl font-black italic uppercase tracking-tighter leading-none mb-1">
+              WELCOME, {data.name}!
+            </h3>
+            <p className="font-bold text-muted-foreground text-sm">
+              Successfully added to the fluffy pack!
+            </p>
+          </div>
+          <button 
+            onClick={() => toast.dismiss(t)}
+            className="p-2 hover:bg-muted rounded-full transition-colors"
+          >
+            <Star className="w-6 h-6 fill-playful-pink text-black" strokeWidth={3} />
+          </button>
+        </div>
+      ), { duration: 5000 });
+      // Navigate with highlighting parameter
+      navigate(`/dashboard?newDogId=${response.id}`);
     } catch (err) {
       toast.error("Failed to register dog", { description: String(err) });
     } finally {
@@ -159,18 +178,21 @@ export function DogRegistration() {
                 {errors.breed && <p className="text-playful-pink font-bold text-xs">{errors.breed.message}</p>}
               </div>
               <div className="md:col-span-2">
-                <motion.div 
-                  className="overflow-hidden space-y-2" 
-                  animate={{ 
-                    maxHeight: selectedBreed === "Other" ? 140 : 0, 
-                    opacity: selectedBreed === "Other" ? 1 : 0 
-                  }} 
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                >
-                  <Label className="font-black text-lg text-foreground">Specify Breed</Label>
-                  <Input {...register('otherBreed')} placeholder="Tell us the breed!" className="playful-input" />
-                  {errors.otherBreed && <p className="text-playful-pink font-bold text-xs">{errors.otherBreed.message}</p>}
-                </motion.div>
+                <AnimatePresence>
+                  {selectedBreed === "Other" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden space-y-2"
+                    >
+                      <Label className="font-black text-lg text-foreground">Specify Breed</Label>
+                      <Input {...register('otherBreed')} placeholder="Tell us the breed!" className="playful-input" />
+                      {errors.otherBreed && <p className="text-playful-pink font-bold text-xs">{errors.otherBreed.message}</p>}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <div className="space-y-2">
                 <Label className="font-black text-lg text-foreground">Age (Years)</Label>
@@ -216,7 +238,7 @@ export function DogRegistration() {
               >
                 {isUploading ? (
                   <div className="w-full max-w-xs space-y-4 text-center">
-                    <Loader2 className="w-10 h-10 mx-auto animate-spin text-playful-blue" />
+                    <Loader2 className="w-10 h-10 mx-auto animate-spin text-playful-blue" strokeWidth={3} />
                     <div className="w-full bg-black/10 rounded-full h-3 border-2 border-black overflow-hidden">
                       <div className="bg-playful-blue h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                     </div>
@@ -229,7 +251,7 @@ export function DogRegistration() {
                   </>
                 ) : (
                   <>
-                    <Upload className="w-10 h-10 mb-2 text-muted-foreground" />
+                    <Upload className="w-10 h-10 mb-2 text-muted-foreground" strokeWidth={3} />
                     <p className="font-black text-lg">Upload Fluffy Vaccine Card</p>
                     <p className="text-sm font-bold text-muted-foreground italic">Required for boarding services</p>
                   </>
@@ -249,7 +271,7 @@ export function DogRegistration() {
             <div className="flex gap-4 pt-4">
               <Button type="button" variant="outline" onClick={() => navigate(-1)} className="playful-btn flex-1 bg-white border-black font-black" disabled={isSubmitting}>Cancel</Button>
               <Button type="submit" className="playful-btn flex-1 bg-playful-pink text-white hover:bg-playful-pink/90 border-black font-black" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                {isSubmitting ? <Loader2 className="animate-spin mr-2" strokeWidth={3} /> : <Sparkles className="mr-2 h-5 w-5" strokeWidth={3} />}
                 Save Profile
               </Button>
             </div>

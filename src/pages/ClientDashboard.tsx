@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Calendar, Dog as DogIcon, Heart, Loader2, ArrowRight, Sparkles, CreditCard, CheckCircle2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Plus, Calendar, Dog as DogIcon, Heart, Loader2, ArrowRight, Sparkles, CreditCard, CheckCircle2, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,8 +9,11 @@ import { Dog, Booking, Invoice } from '@shared/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 export function ClientDashboard() {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const newDogId = searchParams.get('newDogId');
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
     queryKey: ['dogs'],
     queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
@@ -30,7 +33,10 @@ export function ClientDashboard() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      toast.success("Payment Received!", { description: "Thank you! Your fluffy credit is updated.", icon: <Sparkles className="text-playful-yellow" /> });
+      toast.success("Payment Received!", { 
+        description: "Thank you! Your fluffy credit is updated.", 
+        icon: <Sparkles className="text-playful-yellow" /> 
+      });
     },
     onError: (err) => toast.error("Payment failed", { description: String(err) })
   });
@@ -75,25 +81,42 @@ export function ClientDashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  {dogs.map((dog) => (
-                    <motion.div key={dog.id} whileHover={{ y: -4 }} className="playful-card p-6 space-y-6 bg-white border-4 border-black">
-                      <div className="flex justify-between items-start">
-                        <div className="w-14 h-14 rounded-2xl bg-playful-yellow border-4 border-black flex items-center justify-center rotate-3 shadow-solid-sm">
-                          <DogIcon className="h-8 w-8 text-black" strokeWidth={3} />
+                  {dogs.map((dog) => {
+                    const isNewFriend = dog.id === newDogId;
+                    return (
+                      <motion.div 
+                        key={dog.id} 
+                        whileHover={{ y: -4 }} 
+                        className={cn(
+                          "playful-card p-6 space-y-6 bg-white border-4 border-black relative",
+                          isNewFriend && "animate-pulse-playful ring-4 ring-playful-yellow ring-offset-4 ring-offset-background"
+                        )}
+                      >
+                        {isNewFriend && (
+                          <div className="absolute -top-4 -right-4 bg-playful-yellow border-2 border-black px-3 py-1 rounded-full shadow-solid-sm z-10 rotate-12">
+                            <span className="text-[10px] font-black italic uppercase flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-black" /> New Friend!
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-start">
+                          <div className="w-14 h-14 rounded-2xl bg-playful-yellow border-4 border-black flex items-center justify-center rotate-3 shadow-solid-sm">
+                            <DogIcon className="h-8 w-8 text-black" strokeWidth={3} />
+                          </div>
+                          <h3 className="text-3xl font-black italic tracking-tighter uppercase">{dog.name}</h3>
                         </div>
-                        <h3 className="text-3xl font-black italic tracking-tighter uppercase">{dog.name}</h3>
-                      </div>
-                      <div className="space-y-2 text-sm font-bold pt-2 border-t-2 border-black/5">
-                        <p className="text-muted-foreground uppercase tracking-widest text-[10px]">Breed</p>
-                        <p className="text-black font-black text-lg italic tracking-tight">{dog.breed}</p>
-                        <p className="text-muted-foreground uppercase tracking-widest text-[10px] mt-2">Personality</p>
-                        <p className="text-black font-black uppercase">{dog.behavior}</p>
-                      </div>
-                      <Button asChild className="w-full playful-btn bg-playful-blue text-white border-black h-12 text-sm font-black shadow-solid-sm">
-                        <Link to={`/dogs/${dog.id}`}>View Profile <ArrowRight className="ml-2 h-4 w-4" strokeWidth={3} /></Link>
-                      </Button>
-                    </motion.div>
-                  ))}
+                        <div className="space-y-2 text-sm font-bold pt-2 border-t-2 border-black/5">
+                          <p className="text-muted-foreground uppercase tracking-widest text-[10px]">Breed</p>
+                          <p className="text-black font-black text-lg italic tracking-tight">{dog.breed}</p>
+                          <p className="text-muted-foreground uppercase tracking-widest text-[10px] mt-2">Personality</p>
+                          <p className="text-black font-black uppercase">{dog.behavior}</p>
+                        </div>
+                        <Button asChild className="w-full playful-btn bg-playful-blue text-white border-black h-12 text-sm font-black shadow-solid-sm">
+                          <Link to={`/dogs/${dog.id}`}>View Profile <ArrowRight className="ml-2 h-4 w-4" strokeWidth={3} /></Link>
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </section>
