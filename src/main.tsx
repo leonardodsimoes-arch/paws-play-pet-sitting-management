@@ -21,6 +21,7 @@ import { AdminBilling } from '@/pages/AdminBilling';
 import { AdminUsers } from '@/pages/AdminUsers';
 import { AdminUserDetail } from '@/pages/AdminUserDetail';
 import { LoginPage } from '@/pages/LoginPage';
+import { RegisterPage } from '@/pages/RegisterPage';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +40,11 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
     errorElement: <RouteErrorBoundary />
   },
   {
