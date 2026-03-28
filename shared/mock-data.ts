@@ -1,7 +1,7 @@
 import { User, Dog, Booking, Invoice, Chat, ChatMessage } from './types';
 export const MOCK_USERS: User[] = [
-  { id: 'u1', name: 'Alex Barker', email: 'alex@fluffy.com', role: 'client' },
-  { id: 'u2', name: 'Sam Admin', email: 'admin@fluffy.com', role: 'admin' }
+  { id: 'u1', name: 'Alex Barker', email: 'alex@fluffy.com', role: 'client', password: 'password123' },
+  { id: 'u2', name: 'Sam Admin', email: 'admin@fluffy.com', role: 'admin', password: 'password123' }
 ];
 export const MOCK_DOGS: Dog[] = [
   {
