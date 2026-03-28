@@ -24,14 +24,17 @@ export function AdminDashboard() {
     }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      toast.success(`Booking ${variables.status.toUpperCase()}!`, { 
-        description: `Action completed successfully for the buddy.` 
+      toast.success(`Booking ${variables.status.toUpperCase()}!`, {
+        description: `Action completed successfully for the buddy.`
       });
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
   const today = new Date().toISOString().split('T')[0];
-  const activeBookings = bookings.filter(b => b.status === 'confirmed' || b.startDate.startsWith(today));
+  const activeBookings = bookings.filter(b => 
+    b.status === 'confirmed' || 
+    (b.startDate && b.startDate.startsWith(today))
+  );
   if (dogsLoading || bookingsLoading) {
     return (
       <AppLayout container>
@@ -60,7 +63,7 @@ export function AdminDashboard() {
           {[
             { label: 'Fluffy Roster', value: dogs.length, icon: Users, color: 'bg-playful-yellow', textColor: 'text-black' },
             { label: 'Today\'s Buddies', value: activeBookings.length, icon: LayoutDashboard, color: 'bg-playful-green', textColor: 'text-black' },
-            { label: 'Care Alerts', value: dogs.filter(d => d.behavior === 'reactive').length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
+            { label: 'Care Alerts', value: dogs.filter(d => d.behavior === 'reactive' || d.behavior === 'aggressive').length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
           ].map((stat, i) => (
             <motion.div key={i} whileHover={{ y: -4 }} className={`playful-card p-8 ${stat.color} ${stat.textColor} flex items-center gap-6`}>
               <div className="bg-white text-black p-4 rounded-2xl border-4 border-black"><stat.icon size={32} strokeWidth={3} /></div>
@@ -84,7 +87,7 @@ export function AdminDashboard() {
                   <div key={booking.id} className="playful-card p-5 flex items-center justify-between bg-white group hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-5">
                       <div className={`w-14 h-14 ${colorMap[booking.serviceType as keyof typeof colorMap] || 'bg-muted'} border-4 border-black rounded-2xl flex items-center justify-center font-black text-2xl uppercase shadow-solid-sm group-hover:rotate-6 transition-transform`}>
-                        {dog?.name[0] || '?'}
+                        {dog?.name?.[0] || '?'}
                       </div>
                       <div>
                         <h4 className="font-black text-xl italic uppercase tracking-tighter">{dog?.name || 'Unknown'}</h4>
@@ -98,13 +101,13 @@ export function AdminDashboard() {
                     <div className="flex items-center gap-4">
                       {booking.status === 'pending' && (
                         <div className="flex gap-1">
-                          <button 
+                          <button
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
                             className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green border-2 border-transparent hover:border-black/5"
                           >
                             <CheckCircle size={24} strokeWidth={3} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'cancelled' })}
                             className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink border-2 border-transparent hover:border-black/5"
                           >
@@ -113,7 +116,7 @@ export function AdminDashboard() {
                         </div>
                       )}
                       <div className="text-right">
-                        <p className="font-black text-xs italic opacity-60">{new Date(booking.startDate).toLocaleDateString()}</p>
+                        <p className="font-black text-xs italic opacity-60">{booking.startDate ? new Date(booking.startDate).toLocaleDateString() : 'TBD'}</p>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
                           {booking.status}
                         </span>
@@ -127,7 +130,9 @@ export function AdminDashboard() {
           <section className="space-y-6">
             <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase">Care & Safety Notices</h2>
             <div className="space-y-4">
-              {dogs.filter(d => d.behavior === 'reactive' || d.instructions).map(dog => (
+              {dogs.filter(d => d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()).length === 0 ? (
+                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">All clear! No safety notices today.</div>
+              ) : dogs.filter(d => d.behavior === 'reactive' || d.behavior === 'aggressive' || d.instructions?.trim()).map(dog => (
                 <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
                   <div className="flex items-start gap-4">
                     <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white">
@@ -141,11 +146,13 @@ export function AdminDashboard() {
                         </Link>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {dog.behavior === 'reactive' && (
-                          <span className="bg-playful-pink text-white px-4 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">Reactive</span>
+                        {(dog.behavior === 'reactive' || dog.behavior === 'aggressive') && (
+                          <span className="bg-playful-pink text-white px-4 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">
+                            {dog.behavior}
+                          </span>
                         )}
                         <span className="bg-playful-blue/10 text-playful-blue px-4 py-1 rounded-full text-[10px] font-black border-2 border-playful-blue/20 flex items-center gap-1 uppercase">
-                          <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet.slice(0, 20)}...
+                          <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet ? dog.diet.slice(0, 20) : 'None'}...
                         </span>
                       </div>
                       <div className="bg-muted/30 border-2 border-black/5 p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">

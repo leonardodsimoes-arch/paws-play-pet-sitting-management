@@ -22,8 +22,8 @@ export function BookingFlow() {
   });
   const services = [
     { id: 'stay', name: 'Basic Stay', price: 45, time: '7 AM - 7 AM', desc: 'Overnight Boarding' },
-    { id: 'daycare', name: 'Daycare', price: 30, time: '7 AM - 7 PM', desc: 'Playtime' },
-    { id: 'walk', name: 'Dog Walk', price: 15, time: '30 mins', desc: 'Active Exercise' },
+    { id: 'daycare', name: 'Daycare', price: 30, time: '7 AM - 7 PM', desc: 'Full Day Play' },
+    { id: 'walk', name: 'Dog Walk', price: 15, time: '30 mins', desc: 'Neighborhood Stroll' },
   ];
   const handleBooking = async () => {
     if (!selectedDog || !service || !date) {
@@ -40,7 +40,7 @@ export function BookingFlow() {
           ownerId: 'u1',
           serviceType: service,
           startDate: date,
-          endDate: date,
+          endDate: service === 'stay' ? new Date(new Date(date).getTime() + 86400000).toISOString() : date,
           total: selectedService?.price || 0
         })
       });
@@ -143,14 +143,16 @@ export function BookingFlow() {
                 {selectedService && (
                   <div className="p-3 bg-black/10 rounded-xl border border-white/10 text-xs text-white">
                     <p className="font-black uppercase tracking-widest text-[10px] mb-1 opacity-60">Check-out Rule</p>
-                    <p>{selectedService.id === 'stay' ? '7:00 AM Next Day' :
-                        selectedService.id === 'daycare' ? '7:00 PM Same Day' :
-                        '30 mins post-arrival'}</p>
+                    <p>
+                      {selectedService.id === 'stay' ? '7:00 AM the Next Day' :
+                       selectedService.id === 'daycare' ? '7:00 PM the Same Day' :
+                       '30 minutes after arrival'}
+                    </p>
                   </div>
                 )}
                 <div className="flex justify-between text-3xl font-black border-t-4 border-black/20 pt-6 mt-6">
                   <span>TOTAL:</span>
-                  <span className="text-playful-yellow">${selectedService?.price || 0}</span>
+                  <span className="text-playful-yellow">${selectedService?.price ?? 0}</span>
                 </div>
               </div>
               <Button
