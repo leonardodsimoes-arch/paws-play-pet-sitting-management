@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon } from 'lucide-react';
+import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,12 +12,15 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
 import { motion } from 'framer-motion';
+import { differenceInDays, parseISO, addDays, format } from 'date-fns';
 export function BookingFlow() {
   const navigate = useNavigate();
   const userId = useAuthStore(s => s.user?.id);
   const [selectedDog, setSelectedDog] = useState('');
   const [service, setService] = useState('');
-  const [date, setDate] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [walkDuration, setWalkDuration] = useState('30');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: dogs = [], isLoading: loadingDogs } = useQuery({
     queryKey: ['dogs'],
@@ -26,33 +29,61 @@ export function BookingFlow() {
   const services = [
     { id: 'stay', name: 'Basic Stay', price: 45, time: '7 AM - 7 AM', desc: 'Overnight Boarding' },
     { id: 'daycare', name: 'Daycare', price: 30, time: '7 AM - 7 PM', desc: 'Full Day Play' },
-    { id: 'walk', name: 'Dog Walk', price: 15, time: '30 mins', desc: 'Neighborhood Stroll' },
+    { id: 'walk', name: 'Dog Walk', price: 15, time: '30/60 mins', desc: 'Neighborhood Stroll' },
   ];
+  const calculation = useMemo(() => {
+    if (!service || !checkInDate) return { total: 0, units: 0, label: '' };
+    if (service === 'walk') {
+      const price = walkDuration === '60' ? 25 : 15;
+      return { total: price, units: 1, label: walkDuration === '60' ? '60 min walk' : '30 min walk' };
+    }
+    if (!checkOutDate) return { total: 0, units: 0, label: '' };
+    const start = parseISO(checkInDate);
+    const end = parseISO(checkOutDate);
+    const days = differenceInDays(end, start);
+    if (service === 'stay') {
+      const nights = Math.max(1, days);
+      return { total: nights * 45, units: nights, label: `${nights} Night${nights > 1 ? 's' : ''}` };
+    }
+    if (service === 'daycare') {
+      const dayCount = days + 1;
+      return { total: dayCount * 30, units: dayCount, label: `${dayCount} Day${dayCount > 1 ? 's' : ''}` };
+    }
+    return { total: 0, units: 0, label: '' };
+  }, [service, checkInDate, checkOutDate, walkDuration]);
   const handleBooking = async () => {
-    if (!selectedDog || !service || !date) {
+    if (!selectedDog || !service || !checkInDate) {
       toast.error("Oops!", { description: "Please fill in all details first." });
       return;
     }
-    const selectedService = services.find(s => s.id === service);
-    // Parse date safely in local time
-    const arrivalDate = new Date(`${date}T00:00:00`);
+    if (service !== 'walk' && !checkOutDate) {
+      toast.error("Oops!", { description: "Please select a checkout date." });
+      return;
+    }
+    const arrivalDate = new Date(`${checkInDate}T00:00:00`);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (arrivalDate < today) {
       toast.error("Invalid Date", { description: "Paws can't travel back in time!" });
       return;
     }
+    if (checkOutDate && new Date(checkOutDate) < new Date(checkInDate)) {
+      toast.error("Invalid Range", { description: "Checkout must be after Check-in!" });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const startDate = `${date}T07:00:00Z`; // Standard Fluffy Arrival Time
-      let endDate = startDate;
+      const startDateStr = `${checkInDate}T07:00:00Z`;
+      let endDateStr = startDateStr;
       if (service === 'stay') {
-        const nextDay = new Date(arrivalDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayStr = nextDay.toISOString().split('T')[0];
-        endDate = `${nextDayStr}T07:00:00Z`;
+        endDateStr = `${checkOutDate}T07:00:00Z`;
       } else if (service === 'daycare') {
-        endDate = `${date}T19:00:00Z`;
+        endDateStr = `${checkOutDate}T19:00:00Z`;
+      } else if (service === 'walk') {
+        const mins = parseInt(walkDuration);
+        const end = new Date(`${checkInDate}T07:00:00Z`);
+        end.setMinutes(end.getMinutes() + mins);
+        endDateStr = end.toISOString();
       }
       await api('/api/bookings', {
         method: 'POST',
@@ -60,9 +91,9 @@ export function BookingFlow() {
           dogId: selectedDog,
           ownerId: userId,
           serviceType: service,
-          startDate,
-          endDate,
-          total: selectedService?.price || 0
+          startDate: startDateStr,
+          endDate: endDateStr,
+          total: calculation.total
         })
       });
       toast.success("Booking Requested!", { description: "We'll confirm your spot shortly." });
@@ -73,11 +104,11 @@ export function BookingFlow() {
       setIsSubmitting(false);
     }
   };
-  const selectedService = services.find(s => s.id === service);
-  const isFormComplete = !!(selectedDog && service && date);
+  const isFormComplete = !!(selectedDog && service && checkInDate && (service === 'walk' || checkOutDate));
+  const selectedServiceData = services.find(s => s.id === service);
   return (
     <AppLayout container>
-      <div className="space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+      <div className="space-y-12">
         <header className="text-center">
           <h1 className="text-5xl font-black italic tracking-tighter">PLAN A PLAYDATE</h1>
           <p className="text-xl font-bold text-muted-foreground mt-2">Pick your service and dates below</p>
@@ -85,6 +116,7 @@ export function BookingFlow() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           <div className="lg:col-span-2 space-y-8">
             <div className="playful-card p-8 bg-white space-y-8">
+              {/* Dog Selection */}
               <div className="space-y-3">
                 <Label className="font-black text-xl flex items-center gap-2">
                   <DogIcon size={24} className="text-playful-pink" /> Who is visiting?
@@ -100,6 +132,7 @@ export function BookingFlow() {
                   </SelectContent>
                 </Select>
               </div>
+              {/* Service Selection */}
               <div className="space-y-4">
                 <Label className="font-black text-xl">Select Service Package</Label>
                 <div className="grid grid-cols-1 gap-4">
@@ -107,7 +140,10 @@ export function BookingFlow() {
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setService(s.id)}
+                      onClick={() => {
+                        setService(s.id);
+                        if (s.id === 'walk') setCheckOutDate('');
+                      }}
                       className={cn(
                         "text-left p-6 border-4 border-black rounded-2xl transition-all relative overflow-hidden group",
                         service === s.id
@@ -125,28 +161,79 @@ export function BookingFlow() {
                           </div>
                           <p className="font-bold text-muted-foreground mt-1">{s.desc}</p>
                         </div>
-                        <span className="font-black text-3xl">${s.price}</span>
+                        <span className="font-black text-3xl">
+                          {s.id === 'walk' ? '$15+' : `$${s.price}`}
+                        </span>
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="space-y-3">
-                <Label className="font-black text-xl flex items-center gap-2">
-                  <CalendarIcon size={24} className="text-playful-blue" /> Choose Arrival Date
-                </Label>
-                <input
-                  type="date"
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="playful-input w-full h-16 font-black text-2xl uppercase tracking-tighter border-black focus:bg-playful-blue/5 transition-colors"
-                />
-                <p className="text-sm font-bold text-muted-foreground italic">
-                  * Arrival time for all services is 7:00 AM.
-                </p>
-              </div>
+              {/* Date Selection */}
+              {service && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  {service === 'walk' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="font-black text-xl flex items-center gap-2">
+                          <CalendarIcon size={24} className="text-playful-blue" /> Date
+                        </Label>
+                        <input
+                          type="date"
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setCheckInDate(e.target.value)}
+                          className="playful-input w-full h-14 font-black border-black"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="font-black text-xl flex items-center gap-2">
+                          <Clock size={24} className="text-playful-pink" /> Duration
+                        </Label>
+                        <Select onValueChange={setWalkDuration} defaultValue="30">
+                          <SelectTrigger className="playful-input h-14 font-black border-black">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-4 border-black rounded-xl">
+                            <SelectItem value="30" className="font-black">30 Minutes ($15)</SelectItem>
+                            <SelectItem value="60" className="font-black">60 Minutes ($25)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="font-black text-xl flex items-center gap-2">
+                          <CalendarIcon size={24} className="text-playful-blue" /> Check-in Date
+                        </Label>
+                        <input
+                          type="date"
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setCheckInDate(e.target.value)}
+                          className="playful-input w-full h-14 font-black border-black"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="font-black text-xl flex items-center gap-2">
+                          <ArrowRight size={24} className="text-playful-green" /> Check-out Date
+                        </Label>
+                        <input
+                          type="date"
+                          min={checkInDate || new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setCheckOutDate(e.target.value)}
+                          className="playful-input w-full h-14 font-black border-black"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-sm font-bold text-muted-foreground italic">
+                    * {service === 'stay' ? 'Check-out time is strictly 7:00 AM.' : service === 'daycare' ? 'Check-out time is strictly 7:00 PM.' : 'Walk starts at 7:00 AM.'}
+                  </p>
+                </motion.div>
+              )}
             </div>
           </div>
+          {/* Summary Sidebar */}
           <div className="space-y-6 lg:sticky lg:top-8">
             <div className="playful-card p-8 bg-playful-blue text-white space-y-8">
               <h2 className="text-3xl font-black italic flex items-center gap-3">
@@ -159,32 +246,25 @@ export function BookingFlow() {
                 </div>
                 <div className="flex justify-between text-lg">
                   <span className="opacity-70">Service:</span>
-                  <span>{selectedService?.name || '---'}</span>
+                  <span>{selectedServiceData?.name || '---'}</span>
                 </div>
-                {selectedService && (
-                  <div className="p-3 bg-black/10 rounded-xl border border-white/10 text-xs text-white">
-                    <p className="font-black uppercase tracking-widest text-[10px] mb-1 opacity-60">Check-out Rule</p>
-                    <p>
-                      {selectedService.id === 'stay' ? '7:00 AM the Next Day' : 
-                       selectedService.id === 'daycare' ? '7:00 PM the Same Day' :
-                       '30 minutes after arrival'}
-                    </p>
+                {calculation.units > 0 && (
+                  <div className="flex justify-between text-lg">
+                    <span className="opacity-70">Duration:</span>
+                    <span>{calculation.label}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-3xl font-black border-t-4 border-black/20 pt-6 mt-6">
                   <span>TOTAL:</span>
-                  <span className="text-playful-yellow">${selectedService?.price ?? 0}</span>
+                  <span className="text-playful-yellow">${calculation.total}</span>
                 </div>
               </div>
-              <motion.div
-                animate={isFormComplete && !isSubmitting ? { scale: [1, 1.02, 1] } : {}}
-                transition={{ repeat: Infinity, duration: 2 }}
-              >
+              <motion.div animate={isFormComplete && !isSubmitting ? { scale: [1, 1.02, 1] } : {}} transition={{ repeat: Infinity, duration: 2 }}>
                 <Button
                   onClick={handleBooking}
-                  disabled={isSubmitting}
+                  disabled={!isFormComplete || isSubmitting}
                   className={cn(
-                    "playful-btn w-full text-black border-black h-16 text-xl font-black transition-colors",
+                    "playful-btn w-full text-black border-black h-16 text-xl font-black transition-all",
                     isFormComplete ? "bg-playful-yellow hover:bg-playful-yellow/90" : "bg-muted text-muted-foreground"
                   )}
                 >

@@ -5,8 +5,9 @@ import { api } from '@/lib/api-client';
 import { Dog, Booking } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Dog as DogIcon, ShieldCheck, Heart, Utensils, AlertTriangle, Calendar, Loader2 } from 'lucide-react';
+import { ChevronLeft, Dog as DogIcon, ShieldCheck, Heart, Utensils, AlertTriangle, Calendar, Loader2, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { format, parseISO } from 'date-fns';
 export function DogDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -82,49 +83,59 @@ export function DogDetail() {
                 )}
               </div>
             </section>
-            <section className="playful-card p-8 space-y-4 bg-playful-pink/5 border-playful-pink">
-              <h2 className="text-2xl font-black flex items-center gap-3 text-playful-pink">
-                <AlertTriangle /> Personality Notes
-              </h2>
-              <div className="font-bold space-y-2 text-lg">
-                <p>Social Style: <span className="capitalize">{dog.behavior}</span></p>
-                <p className="text-muted-foreground text-sm font-bold">
-                  {dog.behavior === 'friendly' ? 'Loves meeting new friends!' : 
-                   dog.behavior === 'shy' ? 'Needs a little time to warm up.' : 
-                   'Requires experienced handling and individual space.'}
-                </p>
-              </div>
+            <section className="playful-card p-8 bg-playful-yellow border-black text-black text-center space-y-4">
+              <Heart size={48} className="mx-auto fill-playful-pink text-black" />
+              <h3 className="text-2xl font-black">Pack Status: Elite</h3>
+              <p className="font-bold">{dog.name} is a valued member of the Fluffy pack!</p>
             </section>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-8">
             <section className="playful-card p-8 bg-white space-y-6">
               <h2 className="text-2xl font-black flex items-center gap-3">
-                <Calendar className="text-playful-blue" /> Recent Stays
+                <Calendar className="text-playful-blue" /> Adventure History
               </h2>
               {bookingsLoading ? (
-                <Loader2 className="animate-spin" />
+                <Loader2 className="animate-spin text-playful-pink" />
               ) : bookings.length === 0 ? (
                 <p className="font-bold text-muted-foreground italic">No past adventures yet.</p>
               ) : (
-                <div className="space-y-3">
-                  {bookings.map(booking => (
-                    <div key={booking.id} className="flex items-center justify-between p-4 border-2 border-black/5 rounded-xl font-bold">
-                      <div>
-                        <p className="capitalize">{booking.serviceType}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(booking.startDate).toLocaleDateString()}</p>
+                <div className="space-y-4">
+                  {bookings.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()).map(booking => {
+                    const start = parseISO(booking.startDate);
+                    const end = parseISO(booking.endDate);
+                    const dateRange = format(start, 'MMM d') + (booking.serviceType !== 'walk' ? ` - ${format(end, 'MMM d, yyyy')}` : `, ${format(start, 'yyyy')}`);
+                    return (
+                      <div key={booking.id} className="p-5 border-4 border-black rounded-2xl flex justify-between items-center font-bold bg-white shadow-solid-sm">
+                        <div className="space-y-1">
+                          <p className="capitalize text-xl font-black italic tracking-tight">{booking.serviceType}</p>
+                          <p className="text-xs text-muted-foreground font-black uppercase tracking-wider">{dateRange}</p>
+                        </div>
+                        <div className="text-right space-y-2">
+                          <div className="flex items-center gap-1 justify-end font-black text-playful-green">
+                             <CreditCard size={14} /> ${booking.total}
+                          </div>
+                          <span className={`block text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
+                            {booking.status}
+                          </span>
+                        </div>
                       </div>
-                      <span className="bg-playful-green/10 text-playful-green border border-playful-green/20 px-2 py-1 rounded text-[10px] font-black uppercase">
-                        {booking.status}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
-            <section className="playful-card p-8 bg-playful-yellow border-black text-black text-center space-y-4">
-              <Heart size={48} className="mx-auto fill-playful-pink text-black" />
-              <h3 className="text-2xl font-black">Pack Status: Elite</h3>
-              <p className="font-bold">{dog.name} is a valued member of the Fluffy pack!</p>
+            <section className="playful-card p-8 space-y-4 bg-playful-pink/5 border-playful-pink">
+              <h2 className="text-2xl font-black flex items-center gap-3 text-playful-pink">
+                <AlertTriangle /> Personality Notes
+              </h2>
+              <div className="font-bold space-y-2 text-lg">
+                <p>Social Style: <span className="capitalize font-black text-playful-pink">{dog.behavior}</span></p>
+                <p className="text-muted-foreground text-sm font-bold">
+                  {dog.behavior === 'friendly' ? 'Loves meeting new friends!' :
+                   dog.behavior === 'shy' ? 'Needs a little time to warm up.' :
+                   'Requires experienced handling and individual space.'}
+                </p>
+              </div>
             </section>
           </motion.div>
         </div>
