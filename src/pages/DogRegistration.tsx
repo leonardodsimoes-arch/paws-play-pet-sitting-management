@@ -146,9 +146,9 @@ export function DogRegistration() {
                       <SelectTrigger className="playful-input h-11 bg-white">
                         <SelectValue placeholder="Select a breed" />
                       </SelectTrigger>
-                      <SelectContent className="border-4 border-black rounded-xl">
+                      <SelectContent className="bg-white border-4 border-black rounded-xl">
                         {DOG_BREEDS.map((breed) => (
-                          <SelectItem key={breed} value={breed} className="font-bold">
+                          <SelectItem key={breed} value={breed} className="bg-white hover:bg-playful-yellow/20 focus:bg-playful-blue/20 border-black/20 data-[state=checked]:bg-playful-pink text-foreground font-bold">
                             {breed}
                           </SelectItem>
                         ))}
