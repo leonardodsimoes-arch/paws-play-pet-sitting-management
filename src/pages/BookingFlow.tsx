@@ -11,6 +11,7 @@ import { Dog as DogType } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
+import { motion } from 'framer-motion';
 export function BookingFlow() {
   const navigate = useNavigate();
   const userId = useAuthStore(s => s.user?.id);
@@ -33,23 +34,34 @@ export function BookingFlow() {
       return;
     }
     const selectedService = services.find(s => s.id === service);
-    const arrivalDate = new Date(date);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    if (arrivalDate < now) {
+    // Parse date safely in local time
+    const arrivalDate = new Date(`${date}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (arrivalDate < today) {
       toast.error("Invalid Date", { description: "Paws can't travel back in time!" });
       return;
     }
     setIsSubmitting(true);
     try {
+      const startDate = `${date}T07:00:00Z`; // Standard Fluffy Arrival Time
+      let endDate = startDate;
+      if (service === 'stay') {
+        const nextDay = new Date(arrivalDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayStr = nextDay.toISOString().split('T')[0];
+        endDate = `${nextDayStr}T07:00:00Z`;
+      } else if (service === 'daycare') {
+        endDate = `${date}T19:00:00Z`;
+      }
       await api('/api/bookings', {
         method: 'POST',
         body: JSON.stringify({
           dogId: selectedDog,
           ownerId: userId,
           serviceType: service,
-          startDate: date,
-          endDate: service === 'stay' ? new Date(arrivalDate.getTime() + 86400000).toISOString() : date,
+          startDate,
+          endDate,
           total: selectedService?.price || 0
         })
       });
@@ -62,6 +74,7 @@ export function BookingFlow() {
     }
   };
   const selectedService = services.find(s => s.id === service);
+  const isFormComplete = !!(selectedDog && service && date);
   return (
     <AppLayout container>
       <div className="space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -152,7 +165,7 @@ export function BookingFlow() {
                   <div className="p-3 bg-black/10 rounded-xl border border-white/10 text-xs text-white">
                     <p className="font-black uppercase tracking-widest text-[10px] mb-1 opacity-60">Check-out Rule</p>
                     <p>
-                      {selectedService.id === 'stay' ? '7:00 AM the Next Day' :
+                      {selectedService.id === 'stay' ? '7:00 AM the Next Day' : 
                        selectedService.id === 'daycare' ? '7:00 PM the Same Day' :
                        '30 minutes after arrival'}
                     </p>
@@ -163,13 +176,21 @@ export function BookingFlow() {
                   <span className="text-playful-yellow">${selectedService?.price ?? 0}</span>
                 </div>
               </div>
-              <Button
-                onClick={handleBooking}
-                disabled={isSubmitting}
-                className="playful-btn w-full bg-playful-yellow text-black border-black hover:bg-playful-yellow/90 h-16 text-xl font-black"
+              <motion.div
+                animate={isFormComplete && !isSubmitting ? { scale: [1, 1.02, 1] } : {}}
+                transition={{ repeat: Infinity, duration: 2 }}
               >
-                {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "CONFIRM BOOKING"}
-              </Button>
+                <Button
+                  onClick={handleBooking}
+                  disabled={isSubmitting}
+                  className={cn(
+                    "playful-btn w-full text-black border-black h-16 text-xl font-black transition-colors",
+                    isFormComplete ? "bg-playful-yellow hover:bg-playful-yellow/90" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "CONFIRM BOOKING"}
+                </Button>
+              </motion.div>
             </div>
           </div>
         </div>

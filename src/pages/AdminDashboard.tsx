@@ -30,14 +30,21 @@ export function AdminDashboard() {
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
-  const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  // Helper for timezone-safe local date string
+  const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayStr = getLocalDateString();
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled') return false;
     const start = b.startDate?.split('T')[0];
     const end = b.endDate?.split('T')[0];
     return start === todayStr || end === todayStr;
   });
-  // Calculate care alerts strictly for today's visitors
   const todayCareAlertDogs = dogs.filter(dog => {
     const isScheduledToday = activeBookings.some(b => b.dogId === dog.id);
     const hasSpecialNeeds = dog.behavior === 'reactive' || dog.behavior === 'aggressive' || (dog.instructions && dog.instructions.trim().length > 0);
