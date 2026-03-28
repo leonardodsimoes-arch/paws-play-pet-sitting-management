@@ -38,20 +38,19 @@ export function HomePage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl">
           {isAuthenticated ? (
-            <>
-              <Button asChild className="playful-btn bg-playful-yellow hover:bg-playful-yellow/90 text-black text-xl h-16 sm:col-span-2">
-                <Link to={userRole === 'admin' ? '/admin' : '/dashboard'}>
-                  Go to {userRole === 'admin' ? 'Admin Hub' : 'My Dashboard'} <ArrowRight className="ml-2" />
-                </Link>
-              </Button>
-            </>
+            <Button asChild className="playful-btn bg-playful-yellow hover:bg-playful-yellow/90 text-black text-xl h-16 sm:col-span-2">
+              <Link to={userRole === 'admin' ? '/admin' : '/dashboard'}>
+                Go to {userRole === 'admin' ? 'Admin Hub' : 'My Dashboard'} <ArrowRight className="ml-2" />
+              </Link>
+            </Button>
           ) : (
             <>
-              <Button asChild className="playful-btn bg-playful-yellow hover:bg-playful-yellow/90 text-black text-xl h-16">
-                <Link to="/login">Pack Login</Link>
-              </Button>
+              {/* Swapped order: Join the Pack (Blue) first, Pack Login (Yellow) second */}
               <Button asChild className="playful-btn bg-playful-blue hover:bg-playful-blue/90 text-white text-xl h-16">
                 <Link to="/register">Join the Pack</Link>
+              </Button>
+              <Button asChild className="playful-btn bg-playful-yellow hover:bg-playful-yellow/90 text-black text-xl h-16">
+                <Link to="/login">Pack Login</Link>
               </Button>
             </>
           )}
