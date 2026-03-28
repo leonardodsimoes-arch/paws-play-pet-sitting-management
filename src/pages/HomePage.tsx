@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/use-auth-store';
 export function HomePage() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-  const user = useAuthStore(s => s.user);
+  const userRole = useAuthStore(s => s.user?.role);
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-12 md:py-24 flex flex-col items-center text-center space-y-12">
@@ -40,8 +40,8 @@ export function HomePage() {
           {isAuthenticated ? (
             <>
               <Button asChild className="playful-btn bg-playful-yellow hover:bg-playful-yellow/90 text-black text-xl h-16 sm:col-span-2">
-                <Link to={user?.role === 'admin' ? '/admin' : '/dashboard'}>
-                  Go to {user?.role === 'admin' ? 'Admin Hub' : 'My Dashboard'} <ArrowRight className="ml-2" />
+                <Link to={userRole === 'admin' ? '/admin' : '/dashboard'}>
+                  Go to {userRole === 'admin' ? 'Admin Hub' : 'My Dashboard'} <ArrowRight className="ml-2" />
                 </Link>
               </Button>
             </>
