@@ -41,7 +41,7 @@ export function AppSidebar(): JSX.Element {
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={location.pathname === "/"}>
                 <Link to="/" className="font-bold py-6 px-4 flex gap-3">
-                  <Home className="h-5 w-5" /> <span>Home</span>
+                  <Home className="h-5 w-5" strokeWidth={3} /> <span>Home</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -50,7 +50,7 @@ export function AppSidebar(): JSX.Element {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={location.pathname === "/dashboard"}>
                     <Link to="/dashboard" className="font-bold py-6 px-4 flex gap-3">
-                      <Heart className="h-5 w-5" /> <span>My Pack</span>
+                      <Heart className="h-5 w-5" strokeWidth={3} /> <span>My Pack</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -59,21 +59,21 @@ export function AppSidebar(): JSX.Element {
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/admin"}>
                         <Link to="/admin" className="font-bold py-6 px-4 flex gap-3">
-                          <LayoutDashboard className="h-5 w-5" /> <span>Admin Hub</span>
+                          <LayoutDashboard className="h-5 w-5" strokeWidth={3} /> <span>Admin Hub</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/admin/clients"}>
                         <Link to="/admin/clients" className="font-bold py-6 px-4 flex gap-3">
-                          <Users className="h-5 w-5" /> <span>Client Roster</span>
+                          <Users className="h-5 w-5" strokeWidth={3} /> <span>Client Roster</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location.pathname === "/admin/billing"}>
                         <Link to="/admin/billing" className="font-bold py-6 px-4 flex gap-3">
-                          <CreditCard className="h-5 w-5" /> <span>Fluffy Billing</span>
+                          <CreditCard className="h-5 w-5" strokeWidth={3} /> <span>Fluffy Billing</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -85,7 +85,7 @@ export function AppSidebar(): JSX.Element {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === "/login"}>
                   <Link to="/login" className="font-bold py-6 px-4 flex gap-3">
-                    <UserIcon className="h-5 w-5" /> <span>Login</span>
+                    <UserIcon className="h-5 w-5" strokeWidth={3} /> <span>Login</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -100,7 +100,7 @@ export function AppSidebar(): JSX.Element {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/book" className="font-bold py-6 px-4 flex gap-3 text-playful-pink">
-                      <Star className="h-5 w-5 fill-playful-pink" /> <span>New Booking</span>
+                      <Star className="h-5 w-5 fill-playful-pink" strokeWidth={3} /> <span>New Booking</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -123,10 +123,10 @@ export function AppSidebar(): JSX.Element {
             </div>
             <Button
               onClick={handleLogout}
-              variant="outline"
-              className="w-full border-2 border-black font-black hover:bg-playful-pink hover:text-white transition-colors h-10 rounded-xl flex items-center justify-center gap-2"
+              variant="ghost"
+              className="w-full font-black hover:bg-playful-pink/10 hover:text-playful-pink transition-colors h-10 rounded-xl flex items-center justify-center gap-2"
             >
-              <LogOut size={16} /> Logout
+              <LogOut size={16} strokeWidth={3} /> Logout
             </Button>
           </div>
         ) : (
