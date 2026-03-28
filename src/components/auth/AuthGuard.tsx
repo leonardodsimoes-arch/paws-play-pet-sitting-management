@@ -10,12 +10,12 @@ interface AuthGuardProps {
 }
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-  const userRole = useAuthStore(s => s.user?.role);
+  const user = useAuthStore(s => s.user);
   const location = useLocation();
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  if (allowedRoles && userRole && !allowedRoles.includes(userRole as 'client' | 'admin')) {
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6">
         <div className="bg-playful-pink p-6 rounded-3xl border-4 border-black shadow-solid">

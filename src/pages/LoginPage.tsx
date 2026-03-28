@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Dog, KeyRound, Mail, Loader2, Sparkles, Info, ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Dog, KeyRound, Mail, Loader2, Sparkles, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ export function LoginPage() {
   const location = useLocation();
   const setAuth = useAuthStore(s => s.setAuth);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const from = location.state?.from?.pathname || "/";
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' }
@@ -48,7 +49,7 @@ export function LoginPage() {
   };
   return (
     <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4">
-      <motion.div
+      <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="max-w-md w-full playful-card p-8 bg-white space-y-8"
@@ -65,11 +66,11 @@ export function LoginPage() {
             <Label className="font-black text-lg">Fluffy Email</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input
-                {...register('email')}
-                type="email"
-                placeholder="alex@fluffy.com"
-                className="playful-input pl-10"
+              <Input 
+                {...register('email')} 
+                type="email" 
+                placeholder="alex@fluffy.com" 
+                className="playful-input pl-10" 
               />
             </div>
             {errors.email && <p className="text-playful-pink font-bold text-sm">{errors.email.message}</p>}
@@ -78,31 +79,23 @@ export function LoginPage() {
             <Label className="font-black text-lg">Password</Label>
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input
-                {...register('password')}
-                type="password"
-                placeholder="••••••••"
-                className="playful-input pl-10"
+              <Input 
+                {...register('password')} 
+                type="password" 
+                placeholder="••••••••" 
+                className="playful-input pl-10" 
               />
             </div>
             {errors.password && <p className="text-playful-pink font-bold text-sm">{errors.password.message}</p>}
           </div>
-          <Button
-            type="submit"
+          <Button 
+            type="submit" 
             disabled={isSubmitting}
             className="playful-btn w-full bg-playful-blue text-white hover:bg-playful-blue/90 h-14 text-xl font-black"
           >
             {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "LOG IN"}
           </Button>
         </form>
-        <div className="text-center pt-2">
-          <p className="font-bold text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-playful-blue hover:underline font-black inline-flex items-center gap-1">
-              Join the Pack <ArrowRight size={16} />
-            </Link>
-          </p>
-        </div>
         <div className="p-4 bg-playful-yellow/20 rounded-2xl border-2 border-black/10 space-y-2">
           <p className="text-xs font-black uppercase flex items-center gap-2 text-playful-blue">
             <Info size={14} /> Demo Access

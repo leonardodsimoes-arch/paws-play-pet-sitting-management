@@ -9,6 +9,14 @@ export interface User {
   email: string;
   role: 'client' | 'admin';
 }
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+export interface LoginPayload {
+  email: string;
+  password?: string;
+}
 export interface Dog {
   id: string;
   ownerId: string;
