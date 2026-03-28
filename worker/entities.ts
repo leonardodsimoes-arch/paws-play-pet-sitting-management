@@ -4,7 +4,19 @@ import { MOCK_CHATS, MOCK_USERS, MOCK_DOGS, MOCK_BOOKINGS, MOCK_INVOICES } from 
 export class UserEntity extends IndexedEntity<User> {
   static readonly entityName = "user";
   static readonly indexName = "users";
-  static readonly initialState: User = { id: "", name: "", email: "", role: "client" };
+  static readonly initialState: User = { 
+    id: "", 
+    name: "", 
+    email: "", 
+    role: "client",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    emergencyName: "",
+    emergencyPhone: ""
+  };
   static seedData = MOCK_USERS;
 }
 export class DogEntity extends IndexedEntity<Dog> {
