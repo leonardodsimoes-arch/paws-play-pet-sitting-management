@@ -1,12 +1,14 @@
 import React from 'react';
-import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Dog, Booking } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 export function AdminDashboard() {
+  const queryClient = useQueryClient();
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
     queryKey: ['admin-dogs'],
     queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
@@ -14,6 +16,19 @@ export function AdminDashboard() {
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ['admin-bookings'],
     queryFn: () => api<{ items: Booking[] }>('/api/bookings').then(res => res.items)
+  });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: Booking['status'] }) => api(`/api/bookings/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      toast.success(`Booking ${variables.status.toUpperCase()}!`, { 
+        description: `Action completed successfully for the buddy.` 
+      });
+    },
+    onError: (err) => toast.error("Update failed", { description: String(err) })
   });
   const today = new Date().toISOString().split('T')[0];
   const activeBookings = bookings.filter(b => b.status === 'confirmed' || b.startDate.startsWith(today));
@@ -28,7 +43,7 @@ export function AdminDashboard() {
   }
   return (
     <AppLayout container>
-      <div className="space-y-12">
+      <div className="space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-3">
@@ -43,30 +58,22 @@ export function AdminDashboard() {
         </header>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { label: 'Fluffy Roster', value: dogs.length, icon: Users, color: 'bg-playful-yellow' },
-            { label: 'Today\'s Buddies', value: activeBookings.length, icon: LayoutDashboard, color: 'bg-playful-green' },
-            { label: 'Care Alerts', value: dogs.filter(d => d.behavior === 'reactive').length, icon: AlertTriangle, color: 'bg-playful-pink' },
-          ].map((stat, i) => (stat.label === 'Care Alerts' ? (
-            <motion.div key={i} whileHover={{ y: -4 }} className={`playful-card p-8 ${stat.color} text-white flex items-center gap-6`}>
-              <div className="bg-white text-black p-4 rounded-2xl border-4 border-black"><stat.icon size={32} /></div>
+            { label: 'Fluffy Roster', value: dogs.length, icon: Users, color: 'bg-playful-yellow', textColor: 'text-black' },
+            { label: 'Today\'s Buddies', value: activeBookings.length, icon: LayoutDashboard, color: 'bg-playful-green', textColor: 'text-black' },
+            { label: 'Care Alerts', value: dogs.filter(d => d.behavior === 'reactive').length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
+          ].map((stat, i) => (
+            <motion.div key={i} whileHover={{ y: -4 }} className={`playful-card p-8 ${stat.color} ${stat.textColor} flex items-center gap-6`}>
+              <div className="bg-white text-black p-4 rounded-2xl border-4 border-black"><stat.icon size={32} strokeWidth={3} /></div>
               <div>
-                <p className="font-black text-5xl italic">{stat.value}</p>
-                <p className="font-black uppercase tracking-widest text-xs opacity-80">{stat.label}</p>
+                <p className="font-black text-5xl italic leading-none">{stat.value}</p>
+                <p className="font-black uppercase tracking-widest text-xs opacity-80 mt-1">{stat.label}</p>
               </div>
             </motion.div>
-          ) : (
-            <motion.div key={i} whileHover={{ y: -4 }} className={`playful-card p-8 ${stat.color} flex items-center gap-6`}>
-              <div className="bg-black text-white p-4 rounded-2xl border-4 border-black"><stat.icon size={32} /></div>
-              <div>
-                <p className="font-black text-5xl italic">{stat.value}</p>
-                <p className="font-black uppercase tracking-widest text-xs opacity-80">{stat.label}</p>
-              </div>
-            </motion.div>
-          )))}
+          ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <section className="space-y-6">
-            <h2 className="text-3xl font-black italic tracking-tight">DAILY SCHEDULE</h2>
+            <h2 className="text-3xl font-black italic tracking-tight uppercase">Daily Schedule</h2>
             <div className="space-y-4">
               {bookings.length === 0 ? (
                 <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground">No activities scheduled.</div>
@@ -82,17 +89,35 @@ export function AdminDashboard() {
                       <div>
                         <h4 className="font-black text-xl italic uppercase tracking-tighter">{dog?.name || 'Unknown'}</h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
                           <span className="w-1 h-1 bg-black/20 rounded-full" />
-                          <span className="text-xs font-bold text-playful-blue uppercase">Arriving 7 AM</span>
+                          <span className="text-[10px] font-bold text-playful-blue uppercase">Arriving 7 AM</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-black text-sm italic">{new Date(booking.startDate).toLocaleDateString()}</p>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
-                        {booking.status}
-                      </span>
+                    <div className="flex items-center gap-4">
+                      {booking.status === 'pending' && (
+                        <div className="flex gap-1">
+                          <button 
+                            onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
+                            className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green border-2 border-transparent hover:border-black/5"
+                          >
+                            <CheckCircle size={24} strokeWidth={3} />
+                          </button>
+                          <button 
+                            onClick={() => statusMutation.mutate({ id: booking.id, status: 'cancelled' })}
+                            className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink border-2 border-transparent hover:border-black/5"
+                          >
+                            <XCircle size={24} strokeWidth={3} />
+                          </button>
+                        </div>
+                      )}
+                      <div className="text-right">
+                        <p className="font-black text-xs italic opacity-60">{new Date(booking.startDate).toLocaleDateString()}</p>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase ${booking.status === 'confirmed' ? 'bg-playful-green' : 'bg-playful-yellow'}`}>
+                          {booking.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -106,7 +131,7 @@ export function AdminDashboard() {
                 <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
                   <div className="flex items-start gap-4">
                     <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white">
-                      <AlertTriangle size={24} />
+                      <AlertTriangle size={24} strokeWidth={3} />
                     </div>
                     <div className="space-y-4 flex-1">
                       <div className="flex justify-between items-center">
@@ -120,10 +145,10 @@ export function AdminDashboard() {
                           <span className="bg-playful-pink text-white px-4 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">Reactive</span>
                         )}
                         <span className="bg-playful-blue/10 text-playful-blue px-4 py-1 rounded-full text-[10px] font-black border-2 border-playful-blue/20 flex items-center gap-1 uppercase">
-                          <Utensils size={12} /> Diet: {dog.diet.slice(0, 15)}...
+                          <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet.slice(0, 20)}...
                         </span>
                       </div>
-                      <div className="bg-muted/30 border-2 border-black/5 p-4 rounded-2xl italic font-bold text-muted-foreground">
+                      <div className="bg-muted/30 border-2 border-black/5 p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">
                         "{dog.instructions || 'No special instructions recorded'}"
                       </div>
                     </div>

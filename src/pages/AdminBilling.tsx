@@ -1,11 +1,13 @@
 import React from 'react';
-import { Download, Search, CheckCircle2, XCircle, PiggyBank, Loader2 } from 'lucide-react';
+import { Download, Search, CheckCircle2, XCircle, PiggyBank, Loader2, DollarSign } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Invoice, User } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { toast } from 'sonner';
 export function AdminBilling() {
+  const queryClient = useQueryClient();
   const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => api<{ items: Invoice[] }>('/api/invoices').then(res => res.items)
@@ -13,6 +15,17 @@ export function AdminBilling() {
   const { data: users = [], isLoading: loadingUsers } = useQuery({
     queryKey: ['users'],
     queryFn: () => api<{ items: User[] }>('/api/users').then(res => res.items)
+  });
+  const payMutation = useMutation({
+    mutationFn: (id: string) => api(`/api/invoices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'paid' })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success("Payment Recorded!", { description: "Invoice status updated to PAID." });
+    },
+    onError: (err) => toast.error("Update failed", { description: String(err) })
   });
   const totalCollected = invoices
     .filter(inv => inv.status === 'paid')
@@ -22,13 +35,13 @@ export function AdminBilling() {
     .reduce((sum, inv) => sum + inv.amount, 0);
   return (
     <AppLayout container>
-      <div className="space-y-8">
+      <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-4xl font-black flex items-center gap-3">
               Fluffy Billing <PiggyBank className="text-playful-green" />
             </h1>
-            <p className="font-bold text-muted-foreground">Financial Transparency & Revenue</p>
+            <p className="font-bold text-muted-foreground text-lg">Financial Transparency & Revenue</p>
           </div>
           <div className="relative max-w-sm w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -37,15 +50,15 @@ export function AdminBilling() {
         </header>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="playful-card p-6 bg-playful-green text-black">
-            <p className="font-bold uppercase text-xs tracking-wider">Total Collected</p>
+            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Total Collected</p>
             <p className="text-4xl font-black">${totalCollected.toFixed(2)}</p>
           </div>
           <div className="playful-card p-6 bg-playful-pink text-white">
-            <p className="font-bold uppercase text-xs tracking-wider">Pending Dues</p>
+            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Pending Dues</p>
             <p className="text-4xl font-black">${pendingDues.toFixed(2)}</p>
           </div>
           <div className="playful-card p-6 bg-playful-blue text-white">
-            <p className="font-bold uppercase text-xs tracking-wider">Total Invoiced</p>
+            <p className="font-bold uppercase text-xs tracking-wider opacity-70">Total Invoiced</p>
             <p className="text-4xl font-black">${(totalCollected + pendingDues).toFixed(2)}</p>
           </div>
         </div>
@@ -63,7 +76,9 @@ export function AdminBilling() {
               </thead>
               <tbody className="font-bold">
                 {loadingInvoices || loadingUsers ? (
-                  <tr><td colSpan={5} className="py-12 text-center"><Loader2 className="animate-spin mx-auto" /></td></tr>
+                  <tr><td colSpan={5} className="py-12 text-center"><Loader2 className="animate-spin mx-auto text-playful-pink" /></td></tr>
+                ) : invoices.length === 0 ? (
+                  <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">No invoices generated yet.</td></tr>
                 ) : invoices.map((invoice) => {
                   const user = users.find(u => u.id === invoice.ownerId);
                   return (
@@ -80,19 +95,31 @@ export function AdminBilling() {
                       <td className="px-6 py-4 font-black text-xl">${invoice.amount}</td>
                       <td className="px-6 py-4">
                         {invoice.status === 'paid' ? (
-                          <span className="inline-flex items-center gap-1.5 text-playful-green bg-playful-green/10 px-3 py-1 rounded-full border-2 border-playful-green/30">
+                          <span className="inline-flex items-center gap-1.5 text-playful-green bg-playful-green/10 px-3 py-1 rounded-full border-2 border-playful-green/30 text-xs font-black">
                             <CheckCircle2 className="w-4 h-4" /> PAID
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-playful-pink bg-playful-pink/10 px-3 py-1 rounded-full border-2 border-playful-pink/30">
+                          <span className="inline-flex items-center gap-1.5 text-playful-pink bg-playful-pink/10 px-3 py-1 rounded-full border-2 border-playful-pink/30 text-xs font-black">
                             <XCircle className="w-4 h-4" /> UNPAID
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-3 hover:bg-playful-blue/10 rounded-2xl transition-all active:scale-95 border-2 border-transparent hover:border-black/5">
-                          <Download className="w-5 h-5" />
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          {invoice.status === 'unpaid' && (
+                            <button
+                              onClick={() => payMutation.mutate(invoice.id)}
+                              disabled={payMutation.isPending}
+                              className="p-3 hover:bg-playful-green/10 rounded-2xl transition-all active:scale-95 border-2 border-transparent hover:border-black/5 text-playful-green"
+                              title="Mark as Paid"
+                            >
+                              <DollarSign className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button className="p-3 hover:bg-playful-blue/10 rounded-2xl transition-all active:scale-95 border-2 border-transparent hover:border-black/5">
+                            <Download className="w-5 h-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
