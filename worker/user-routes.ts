@@ -16,6 +16,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const page = await DogEntity.list(c.env, c.req.query('cursor'), Number(c.req.query('limit')) || 50);
     return ok(c, page);
   });
+  app.get('/api/dogs/:id', async (c) => {
+    const id = c.req.param('id');
+    const entity = new DogEntity(c.env, id);
+    if (!(await entity.exists())) return notFound(c, 'Buddy not found');
+    return ok(c, await entity.getState());
+  });
   app.post('/api/dogs', async (c) => {
     const data = await c.req.json() as Dog;
     if (!data.name || !data.ownerId) return bad(c, 'Missing required dog fields');
@@ -30,10 +36,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   app.post('/api/bookings', async (c) => {
     const data = await c.req.json() as Booking;
-    const booking = await BookingEntity.create(c.env, { 
-      ...data, 
+    const booking = await BookingEntity.create(c.env, {
+      ...data,
       id: crypto.randomUUID(),
-      status: 'pending' 
+      status: 'pending'
     });
     // Auto-generate invoice
     await InvoiceEntity.create(c.env, {
@@ -52,7 +58,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const page = await InvoiceEntity.list(c.env, c.req.query('cursor'), Number(c.req.query('limit')) || 50);
     return ok(c, page);
   });
-  // CHATS (Existing)
+  // CHATS
   app.get('/api/chats', async (c) => {
     await ChatBoardEntity.ensureSeed(c.env);
     return ok(c, await ChatBoardEntity.list(c.env));
