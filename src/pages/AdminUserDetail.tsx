@@ -1,16 +1,17 @@
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { User, Dog, Booking, Invoice } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Mail, Dog as DogIcon, Calendar, CreditCard, PlusCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, Mail, Dog as DogIcon, Calendar, CreditCard, PlusCircle, Loader2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 export function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['admin-user', id],
     queryFn: () => api<User>(`/api/users/${id}`)
@@ -27,7 +28,29 @@ export function AdminUserDetail() {
     queryKey: ['admin-user-invoices', id],
     queryFn: () => api<{ items: Invoice[] }>('/api/invoices').then(res => res.items.filter(i => i.ownerId === id))
   });
-  const handleManualInvoice = () => toast.success("Mock: Manual invoice created for 30.00 fluffy points!");
+  const invoiceMutation = useMutation({
+    mutationFn: (amount: number) => api('/api/invoices', {
+      method: 'POST',
+      body: JSON.stringify({ ownerId: id, amount })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-invoices'] });
+      toast.success("Manual Invoice Created!", { 
+        description: "The client will see this on their dashboard.",
+        icon: <Sparkles className="text-playful-yellow" />
+      });
+    },
+    onError: (err) => toast.error("Failed to create invoice", { description: String(err) })
+  });
+  const handleManualInvoice = () => {
+    const amountStr = prompt("Enter the amount for this manual invoice (e.g. 30.00):");
+    const amount = parseFloat(amountStr || "");
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Invalid amount", { description: "Please enter a positive numeric value." });
+      return;
+    }
+    invoiceMutation.mutate(amount);
+  };
   if (userLoading) return <AppLayout container><Loader2 className="animate-spin mx-auto mt-20" /></AppLayout>;
   if (!user) return <AppLayout container><div className="text-center font-black">Parent not found!</div></AppLayout>;
   return (
@@ -37,8 +60,13 @@ export function AdminUserDetail() {
           <Button variant="ghost" onClick={() => navigate(-1)} className="font-black hover:bg-playful-yellow/20">
             <ChevronLeft className="mr-2" /> All Parents
           </Button>
-          <Button onClick={handleManualInvoice} className="playful-btn bg-playful-pink text-white border-black">
-            <PlusCircle className="mr-2 h-4 w-4" /> Manual Invoice
+          <Button 
+            onClick={handleManualInvoice} 
+            disabled={invoiceMutation.isPending}
+            className="playful-btn bg-playful-pink text-white border-black"
+          >
+            {invoiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+            Manual Invoice
           </Button>
         </header>
         <div className="playful-card p-10 bg-playful-yellow border-black text-black">
@@ -59,7 +87,9 @@ export function AdminUserDetail() {
             <DogIcon className="text-playful-blue" /> Registered Pack
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dogs.map(dog => (
+            {dogs.length === 0 ? (
+              <div className="col-span-full p-8 border-4 border-dashed rounded-2xl text-center font-bold text-muted-foreground">No dogs registered yet.</div>
+            ) : dogs.map(dog => (
               <motion.div key={dog.id} whileHover={{ y: -4 }} className="playful-card p-6 bg-white">
                 <h4 className="font-black text-xl italic">{dog.name}</h4>
                 <p className="text-xs font-bold text-muted-foreground mb-4">{dog.breed}</p>
@@ -76,7 +106,9 @@ export function AdminUserDetail() {
               <Calendar className="text-playful-pink" /> Booking History
             </h3>
             <div className="space-y-3">
-              {bookings.map(b => (
+              {bookings.length === 0 ? (
+                <p className="font-bold text-muted-foreground italic text-center py-4">No bookings found.</p>
+              ) : bookings.map(b => (
                 <div key={b.id} className="p-4 border-2 border-black/5 rounded-xl flex justify-between items-center font-bold">
                   <div>
                     <p className="capitalize">{b.serviceType}</p>
@@ -94,7 +126,9 @@ export function AdminUserDetail() {
               <CreditCard className="text-playful-green" /> Financial Summary
             </h3>
             <div className="space-y-3">
-              {invoices.map(inv => (
+              {invoices.length === 0 ? (
+                <p className="font-bold text-muted-foreground italic text-center py-4">No invoices found.</p>
+              ) : invoices.map(inv => (
                 <div key={inv.id} className="p-4 border-2 border-black/5 rounded-xl flex justify-between items-center font-bold">
                   <div>
                     <p className="text-xs text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString()}</p>

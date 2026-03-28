@@ -1,7 +1,6 @@
 import { Hono } from "hono";
-import crypto from "crypto";
 import type { Env } from './core-utils';
-import { UserEntity, DogEntity, BookingEntity, InvoiceEntity, ChatBoardEntity } from "./entities";
+import { UserEntity, DogEntity, BookingEntity, InvoiceEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
 import type { Dog, Booking, User, LoginPayload, AuthResponse } from "@shared/types";
 async function getAuthUser(c: any): Promise<User | null> {
@@ -21,13 +20,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const usersPage = await UserEntity.list(c.env);
     const user = usersPage.items.find(u => u.email === email);
     if (!user) return bad(c, 'Invalid credentials');
-    
-    // Simple check: if user has a password set (even if just "password123" from seed)
-    // In a real app, use subtle crypto for timing-safe comparison
     if (password && user.password && user.password !== password) {
       return bad(c, 'Invalid credentials');
     }
-
     const response: AuthResponse = {
       user,
       token: `mock-token-${user.id}`
@@ -110,12 +105,47 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!name || !email || !password) return bad(c, 'Missing required fields');
     const usersPage = await UserEntity.list(c.env);
     if (usersPage.items.some(u => u.email === email)) return bad(c, 'Email already in use');
-    
     const user = await UserEntity.create(c.env, {
       id: crypto.randomUUID(),
       name, email, role: 'client', password
     });
     return ok(c, user);
+  });
+  app.get('/api/invoices', async (c) => {
+    const user = await getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    const page = await InvoiceEntity.list(c.env, c.req.query('cursor'), Number(c.req.query('limit')) || 50);
+    if (user.role === 'client') {
+      page.items = page.items.filter(inv => inv.ownerId === user.id);
+    }
+    return ok(c, page);
+  });
+  app.post('/api/invoices', async (c) => {
+    const user = await getAuthUser(c);
+    if (!user || user.role !== 'admin') return c.json({ success: false, error: 'Unauthorized' }, 401);
+    const data = await c.req.json();
+    if (!data.ownerId || !data.amount) return bad(c, 'Missing fields');
+    const invoice = await InvoiceEntity.create(c.env, {
+      id: crypto.randomUUID(),
+      bookingId: data.bookingId || "manual",
+      ownerId: data.ownerId,
+      amount: data.amount,
+      status: 'unpaid',
+      createdAt: new Date().toISOString()
+    });
+    return ok(c, invoice);
+  });
+  app.patch('/api/invoices/:id', async (c) => {
+    const user = await getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    const id = c.req.param('id');
+    const patch = await c.req.json();
+    const entity = new InvoiceEntity(c.env, id);
+    if (!(await entity.exists())) return notFound(c, 'Invoice not found');
+    const current = await entity.getState();
+    if (user.role === 'client' && current.ownerId !== user.id) return c.json({ success: false, error: 'Forbidden' }, 403);
+    const updated = await entity.mutate(s => ({ ...s, ...patch }));
+    return ok(c, updated);
   });
   app.patch('/api/bookings/:id', async (c) => {
     const user = await getAuthUser(c);
@@ -140,26 +170,5 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     const okDel = await BookingEntity.delete(c.env, id);
     return okDel ? ok(c, { id }) : notFound(c, 'Booking not found');
-  });
-  app.get('/api/invoices', async (c) => {
-    const user = await getAuthUser(c);
-    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
-    const page = await InvoiceEntity.list(c.env, c.req.query('cursor'), Number(c.req.query('limit')) || 50);
-    if (user.role === 'client') {
-      page.items = page.items.filter(inv => inv.ownerId === user.id);
-    }
-    return ok(c, page);
-  });
-  app.patch('/api/invoices/:id', async (c) => {
-    const user = await getAuthUser(c);
-    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
-    const id = c.req.param('id');
-    const patch = await c.req.json();
-    const entity = new InvoiceEntity(c.env, id);
-    if (!(await entity.exists())) return notFound(c, 'Invoice not found');
-    const current = await entity.getState();
-    if (user.role === 'client' && current.ownerId !== user.id) return c.json({ success: false, error: 'Forbidden' }, 403);
-    const updated = await entity.mutate(s => ({ ...s, ...patch }));
-    return ok(c, updated);
   });
 }
