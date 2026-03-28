@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { LayoutDashboard, Users, AlertTriangle, Utensils, Star, Loader2, Calendar, ArrowRight, CheckCircle2, XCircle, Home } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Dog, Booking } from '@shared/types';
@@ -7,6 +7,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { isWithinInterval, parseISO, startOfDay, endOfDay, format } from 'date-fns';
 export function AdminDashboard() {
   const queryClient = useQueryClient();
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
@@ -24,26 +25,17 @@ export function AdminDashboard() {
     }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      toast.success(`Booking ${variables.status.toUpperCase()}!`, {
-        description: `Action completed successfully for the buddy.`
-      });
+      toast.success(`Booking ${variables.status.toUpperCase()}!`);
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
-  // Helper for timezone-safe local date string
-  const getLocalDateString = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  const todayStr = getLocalDateString();
+  const today = startOfDay(new Date());
+  const todayStr = format(today, 'yyyy-MM-dd');
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled') return false;
-    const start = b.startDate?.split('T')[0];
-    const end = b.endDate?.split('T')[0];
-    return start === todayStr || end === todayStr;
+    const start = startOfDay(parseISO(b.startDate));
+    const end = startOfDay(parseISO(b.endDate));
+    return isWithinInterval(today, { start, end });
   });
   const todayCareAlertDogs = dogs.filter(dog => {
     const isScheduledToday = activeBookings.some(b => b.dogId === dog.id);
@@ -61,7 +53,7 @@ export function AdminDashboard() {
   }
   return (
     <AppLayout container>
-      <div className="space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="space-y-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-3">
@@ -71,7 +63,7 @@ export function AdminDashboard() {
           </div>
           <div className="bg-playful-blue text-white border-4 border-black px-8 py-4 rounded-3xl font-black shadow-solid flex items-center gap-3">
             <Calendar className="text-playful-yellow" />
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {format(new Date(), 'EEEE, MMMM do')}
           </div>
         </header>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -98,7 +90,20 @@ export function AdminDashboard() {
               ) : activeBookings.map(booking => {
                 const dog = dogs.find(d => d.id === booking.dogId);
                 const colorMap = { stay: 'bg-playful-pink', daycare: 'bg-playful-yellow', walk: 'bg-playful-blue' };
-                const isArriving = booking.startDate?.split('T')[0] === todayStr;
+                const startStr = booking.startDate.split('T')[0];
+                const endStr = booking.endDate.split('T')[0];
+                let statusLabel = 'In House';
+                let timeInfo = '';
+                let statusColor = 'bg-playful-blue text-white';
+                if (startStr === todayStr) {
+                  statusLabel = 'Arriving';
+                  timeInfo = '7:00 AM';
+                  statusColor = 'bg-playful-green text-black';
+                } else if (endStr === todayStr) {
+                  statusLabel = 'Departing';
+                  timeInfo = '7:00 AM';
+                  statusColor = 'bg-playful-pink text-white';
+                }
                 return (
                   <div key={booking.id} className="playful-card p-5 flex items-center justify-between bg-white group hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-5">
@@ -110,8 +115,8 @@ export function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
                           <span className="w-1 h-1 bg-black/20 rounded-full" />
-                          <span className={`text-[10px] font-bold uppercase ${isArriving ? 'text-playful-green' : 'text-playful-pink'}`}>
-                            {isArriving ? 'Arriving 7 AM' : 'Departing 7 AM'}
+                          <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase", statusColor)}>
+                            {statusLabel} {timeInfo}
                           </span>
                         </div>
                       </div>
@@ -121,13 +126,13 @@ export function AdminDashboard() {
                         <div className="flex gap-1">
                           <button
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
-                            className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green border-2 border-transparent hover:border-black/5"
+                            className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green"
                           >
                             <CheckCircle2 size={24} strokeWidth={3} />
                           </button>
                           <button
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'cancelled' })}
-                            className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink border-2 border-transparent hover:border-black/5"
+                            className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink"
                           >
                             <XCircle size={24} strokeWidth={3} />
                           </button>
