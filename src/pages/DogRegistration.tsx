@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -15,8 +15,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 const dogSchema = z.object({
   name: z.string().min(1, "Name is required"),
   breed: z.string().min(1, "Breed is required"),
-  age: z.coerce.number().min(0),
-  weight: z.coerce.number().min(0),
+  age: z.number().min(0),
+  weight: z.number().min(0),
   behavior: z.enum(['friendly', 'shy', 'aggressive', 'reactive']),
   vaccinesUpToDate: z.boolean(),
   diet: z.string().min(1, "Diet details required"),
@@ -28,7 +28,7 @@ export function DogRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasUploaded, setHasUploaded] = useState(false);
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<DogFormValues>({
+  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<DogFormValues>({
     resolver: zodResolver(dogSchema),
     defaultValues: {
       name: '',
@@ -41,7 +41,7 @@ export function DogRegistration() {
       instructions: ''
     }
   });
-  const onSubmit = async (data: DogFormValues) => {
+  const onSubmit: SubmitHandler<DogFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
       await api('/api/dogs', {
@@ -68,7 +68,6 @@ export function DogRegistration() {
       toast.success("Vaccine card processed!");
     }, 1500);
   };
-  const behaviorValue = watch('behavior');
   return (
     <AppLayout container>
       <div className="max-w-3xl mx-auto py-8 md:py-12">
@@ -103,27 +102,36 @@ export function DogRegistration() {
               </div>
               <div className="space-y-2">
                 <Label className="font-black text-lg text-foreground">Age (Years)</Label>
-                <Input type="number" {...register('age')} className="playful-input" />
+                <Input type="number" {...register('age', { valueAsNumber: true })} className="playful-input" />
               </div>
               <div className="space-y-2">
                 <Label className="font-black text-lg text-foreground">Weight (kg)</Label>
-                <Input type="number" {...register('weight')} className="playful-input" />
+                <Input type="number" {...register('weight', { valueAsNumber: true })} className="playful-input" />
               </div>
             </div>
             <div className="space-y-4">
               <Label className="font-black text-lg text-foreground">Behavior Profile</Label>
-              <RadioGroup
-                value={behaviorValue}
-                onValueChange={(val: any) => setValue('behavior', val)}
-                className="grid grid-cols-2 gap-4"
-              >
-                {['friendly', 'shy', 'aggressive', 'reactive'].map((type) => (
-                  <div key={type} className={`flex items-center space-x-2 border-4 border-black rounded-xl p-4 font-black transition-colors ${behaviorValue === type ? 'bg-playful-blue text-white' : 'bg-white'}`}>
-                    <RadioGroupItem value={type} id={type} className="border-2 border-black bg-white" />
-                    <Label htmlFor={type} className="capitalize cursor-pointer flex-1">{type}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
+              <Controller
+                name="behavior"
+                control={control}
+                render={({ field }) => (
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="grid grid-cols-2 gap-4"
+                  >
+                    {['friendly', 'shy', 'aggressive', 'reactive'].map((type) => (
+                      <div 
+                        key={type} 
+                        className={`flex items-center space-x-2 border-4 border-black rounded-xl p-4 font-black transition-colors ${field.value === type ? 'bg-playful-blue text-white' : 'bg-white'}`}
+                      >
+                        <RadioGroupItem value={type} id={type} className="border-2 border-black bg-white" />
+                        <Label htmlFor={type} className="capitalize cursor-pointer flex-1">{type}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+              />
             </div>
             <div className="space-y-4">
               <Label className="font-black text-lg text-foreground">Health & Safety</Label>
@@ -144,6 +152,7 @@ export function DogRegistration() {
             </div>
             <div className="space-y-2">
               <Label className="font-black text-lg text-foreground">Dietary Needs</Label>
+              <span className="text-xs font-bold text-muted-foreground block -mt-1 mb-2">Required for the snack bar!</span>
               <Textarea {...register('diet')} placeholder="Describe food type, timing, and allergies..." className="playful-input min-h-[100px]" />
               {errors.diet && <p className="text-playful-pink font-bold text-sm">{errors.diet.message}</p>}
             </div>
