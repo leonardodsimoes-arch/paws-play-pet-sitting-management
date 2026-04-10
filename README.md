@@ -1,6 +1,6 @@
 # Paws and Play
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/leonardodsimoes-arch/paws-play-pet-sitting-management)
 
 A modern full-stack chat application built on Cloudflare Workers. This project demonstrates a scalable, serverless architecture using Durable Objects for real-time chat boards, user management, and message persistence. The frontend is a responsive React app with shadcn/ui components, Tailwind CSS, and TanStack Query for data fetching.
 
@@ -116,7 +116,7 @@ All responses follow `{ success: true, data: T }` or `{ success: false, error: s
 
 One-click deploy:
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/leonardodsimoes-arch/paws-play-pet-sitting-management)
 
 **Customizations**:
 - Update `wrangler.jsonc` for bindings/migrations.
