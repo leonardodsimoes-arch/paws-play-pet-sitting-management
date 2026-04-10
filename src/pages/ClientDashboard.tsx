@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Calendar, Dog as DogIcon, Heart, Loader2, ArrowRight, Sparkles, CreditCard, CheckCircle2, Star } from 'lucide-react';
+import { Plus, Calendar, Dog as DogIcon, Heart, Loader2, ArrowRight, Sparkles, CreditCard, CheckCircle2, Star, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { Dog, Booking, Invoice } from '@shared/types';
@@ -12,8 +12,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 export function ClientDashboard() {
   const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
-  const newDogId = searchParams.get('newDogId');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [newFriendId, setNewFriendId] = useState<string | null>(searchParams.get('newDogId'));
   const { data: dogs = [], isLoading: dogsLoading } = useQuery({
     queryKey: ['dogs'],
     queryFn: () => api<{ items: Dog[] }>('/api/dogs').then(res => res.items)
@@ -33,19 +33,25 @@ export function ClientDashboard() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      toast.success("Payment Received!", { 
-        description: "Thank you! Your fluffy credit is updated.", 
-        icon: <Sparkles className="text-playful-yellow" /> 
+      toast.success("Payment Received!", {
+        description: "Thank you! Your fluffy credit is updated.",
+        icon: <Sparkles className="text-playful-yellow" />
       });
     },
     onError: (err) => toast.error("Payment failed", { description: String(err) })
   });
+  const dismissNewFriend = () => {
+    setNewFriendId(null);
+    const params = new URLSearchParams(searchParams);
+    params.delete('newDogId');
+    setSearchParams(params);
+  };
   const handlePay = (invoiceId: string) => {
     payMutation.mutate(invoiceId);
   };
   return (
     <AppLayout container>
-      <div className="space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="space-y-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-3">
@@ -82,34 +88,44 @@ export function ClientDashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   {dogs.map((dog) => {
-                    const isNewFriend = dog.id === newDogId;
+                    const isNewFriend = dog.id === newFriendId;
                     return (
-                      <motion.div 
-                        key={dog.id} 
-                        whileHover={{ y: -4 }} 
+                      <motion.div
+                        key={dog.id}
+                        whileHover={{ y: -4 }}
                         className={cn(
                           "playful-card p-6 space-y-6 bg-white border-4 border-black relative",
                           isNewFriend && "animate-pulse-playful ring-4 ring-playful-yellow ring-offset-4 ring-offset-background"
                         )}
                       >
-                        {isNewFriend && (
-                          <div className="absolute -top-4 -right-4 bg-playful-yellow border-2 border-black px-3 py-1 rounded-full shadow-solid-sm z-10 rotate-12">
-                            <span className="text-[10px] font-black italic uppercase flex items-center gap-1">
-                              <Star className="w-3 h-3 fill-black" /> New Friend!
-                            </span>
-                          </div>
-                        )}
+                        <AnimatePresence>
+                          {isNewFriend && (
+                            <motion.div 
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 12 }}
+                              exit={{ scale: 0 }}
+                              className="absolute -top-4 -right-4 bg-playful-yellow border-2 border-black px-3 py-1 rounded-full shadow-solid-sm z-10 flex items-center gap-2"
+                            >
+                              <span className="text-[10px] font-black italic uppercase flex items-center gap-1">
+                                <Star className="w-3 h-3 fill-black" /> New Friend!
+                              </span>
+                              <button onClick={dismissNewFriend} className="hover:text-playful-pink transition-colors">
+                                <X size={12} strokeWidth={3} />
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                         <div className="flex justify-between items-start">
                           <div className="w-14 h-14 rounded-2xl bg-playful-yellow border-4 border-black flex items-center justify-center rotate-3 shadow-solid-sm">
                             <DogIcon className="h-8 w-8 text-black" strokeWidth={3} />
                           </div>
-                          <h3 className="text-3xl font-black italic tracking-tighter uppercase">{dog.name}</h3>
+                          <h3 className="text-3xl font-black italic tracking-tighter uppercase truncate max-w-[140px]">{dog.name}</h3>
                         </div>
                         <div className="space-y-2 text-sm font-bold pt-2 border-t-2 border-black/5">
-                          <p className="text-muted-foreground uppercase tracking-widest text-[10px]">Breed</p>
-                          <p className="text-black font-black text-lg italic tracking-tight">{dog.breed}</p>
-                          <p className="text-muted-foreground uppercase tracking-widest text-[10px] mt-2">Personality</p>
-                          <p className="text-black font-black uppercase">{dog.behavior}</p>
+                          <p className="text-muted-foreground uppercase tracking-widest text-[9px]">Breed</p>
+                          <p className="text-black font-black text-lg italic tracking-tight truncate">{dog.breed}</p>
+                          <p className="text-muted-foreground uppercase tracking-widest text-[9px] mt-2">Personality</p>
+                          <p className="text-black font-black uppercase text-xs">{dog.behavior}</p>
                         </div>
                         <Button asChild className="w-full playful-btn bg-playful-blue text-white border-black h-12 text-sm font-black shadow-solid-sm">
                           <Link to={`/dogs/${dog.id}`}>View Profile <ArrowRight className="ml-2 h-4 w-4" strokeWidth={3} /></Link>
@@ -124,7 +140,7 @@ export function ClientDashboard() {
               <h2 className="text-3xl font-black mb-6 flex items-center gap-3 italic uppercase tracking-tight">
                 <Calendar className="text-playful-pink" strokeWidth={3} /> Upcoming Fun
               </h2>
-              <div className="playful-card overflow-hidden bg-white border-4 border-black shadow-solid">
+              <div className="playful-card overflow-hidden bg-white border-4 border-black shadow-solid min-h-[300px]">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-muted border-b-4 border-black font-black text-[10px] uppercase tracking-widest">
@@ -148,7 +164,7 @@ export function ClientDashboard() {
                             <td className="px-6 py-5">{new Date(booking.startDate).toLocaleDateString()}</td>
                             <td className="px-6 py-5">
                               <span className={cn(
-                                "px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase",
+                                "px-3 py-1 rounded-full border-2 border-black text-[9px] font-black uppercase",
                                 booking.status === 'confirmed' ? 'bg-playful-green text-black' : 'bg-playful-yellow text-black'
                               )}>
                                 {booking.status}
@@ -167,11 +183,13 @@ export function ClientDashboard() {
             <h2 className="text-3xl font-black flex items-center gap-3 italic uppercase tracking-tight">
               <CreditCard className="text-playful-green" strokeWidth={3} /> My Bills
             </h2>
-            <div className="space-y-6">
-              {invoicesLoading ? <Loader2 className="animate-spin text-playful-pink mx-auto" /> : invoices.length === 0 ? (
+            <div className="space-y-6 min-h-[400px]">
+              {invoicesLoading ? (
+                <div className="flex justify-center p-12"><Loader2 className="animate-spin text-playful-pink h-8 w-8" strokeWidth={3} /></div>
+              ) : invoices.length === 0 ? (
                 <div className="playful-card p-10 text-center text-muted-foreground font-black italic bg-white border-dashed border-4 border-black">No bills found.</div>
               ) : invoices.map(invoice => (
-                <motion.div key={invoice.id} whileHover={{ x: 4 }} className="playful-card p-8 bg-white space-y-6 border-4 border-black shadow-solid relative overflow-hidden">
+                <motion.div key={invoice.id} whileHover={{ x: 4 }} className="playful-card p-8 bg-white space-y-6 border-4 border-black shadow-solid flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Invoice Date</p>
@@ -183,7 +201,7 @@ export function ClientDashboard() {
                   </div>
                   <div className="flex items-center justify-between gap-4 pt-4 border-t-2 border-black/5">
                     {invoice.status === 'paid' ? (
-                      <div className="flex items-center gap-2 text-playful-green font-black text-xs uppercase tracking-widest border-2 border-black px-4 py-2 rounded-xl bg-playful-green/10 w-full justify-center">
+                      <div className="flex items-center gap-2 text-playful-green font-black text-xs uppercase tracking-widest border-2 border-black px-4 py-2 rounded-xl bg-playful-green/10 w-full justify-center h-12">
                         <CheckCircle2 size={18} strokeWidth={3} /> PAID IN FULL
                       </div>
                     ) : (

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon, ArrowRight, AlertCircle } from 'lucide-react';
+import { Calculator, Loader2, Clock, CalendarIcon, Dog as DogIcon, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +12,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { cn, parseLocalISO } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, isBefore, startOfDay } from 'date-fns';
 export function BookingFlow() {
   const navigate = useNavigate();
   const userId = useAuthStore(s => s.user?.id);
@@ -42,7 +42,7 @@ export function BookingFlow() {
     const end = parseLocalISO(checkOutDate);
     const days = differenceInDays(end, start);
     if (service === 'stay') {
-      if (days < 1) return { total: 0, units: 0, label: 'Invalid Range', isValid: false };
+      if (days < 1) return { total: 0, units: 0, label: 'Min 1 Night Required', isValid: false };
       return { total: days * 45, units: days, label: `${days} Night${days > 1 ? 's' : ''}`, isValid: true };
     }
     if (service === 'daycare') {
@@ -56,11 +56,8 @@ export function BookingFlow() {
       toast.error("Oops!", { description: "Please fill in all details first." });
       return;
     }
-    if (service === 'stay' && (!checkOutDate || differenceInDays(parseLocalISO(checkOutDate), parseLocalISO(checkInDate)) < 1)) {
-      toast.error("Invalid Stay", {
-        description: "Boarding requires at least one night (Check-out must be after Check-in day).",
-        icon: <AlertCircle className="text-playful-pink" />
-      });
+    if (!calculation.isValid) {
+      toast.error("Invalid Selection", { description: calculation.label });
       return;
     }
     setIsSubmitting(true);
@@ -85,7 +82,10 @@ export function BookingFlow() {
           total: calculation.total
         })
       });
-      toast.success("Booking Requested!", { description: "We'll confirm your spot shortly." });
+      toast.success("Booking Requested!", { 
+        description: "We'll confirm your spot shortly.",
+        icon: <Sparkles className="text-playful-yellow" />
+      });
       navigate('/dashboard');
     } catch (err) {
       toast.error("Booking failed", { description: String(err) });
@@ -95,6 +95,7 @@ export function BookingFlow() {
   };
   const isFormComplete = !!(selectedDog && service && checkInDate && calculation.isValid);
   const selectedServiceData = services.find(s => s.id === service);
+  const todayStr = new Date().toISOString().split('T')[0];
   return (
     <AppLayout container>
       <div className="space-y-12">
@@ -156,55 +157,69 @@ export function BookingFlow() {
                   ))}
                 </div>
               </div>
-              {service && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label className="font-black text-xl flex items-center gap-2">
-                        <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> {service === 'walk' ? 'Date' : 'Check-in Date'}
-                      </Label>
-                      <input
-                        type="date"
-                        min={new Date().toISOString().split('T')[0]}
-                        onChange={(e) => setCheckInDate(e.target.value)}
-                        className="playful-input w-full h-14 font-black border-black bg-white"
-                      />
-                    </div>
-                    {service !== 'walk' ? (
+              <AnimatePresence>
+                {service && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-6 overflow-hidden pt-4"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label className="font-black text-xl flex items-center gap-2">
-                          <ArrowRight size={24} className="text-playful-green" strokeWidth={3} /> Check-out Date
+                          <CalendarIcon size={24} className="text-playful-blue" strokeWidth={3} /> {service === 'walk' ? 'Date' : 'Check-in Date'}
                         </Label>
                         <input
                           type="date"
-                          min={checkInDate || new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setCheckOutDate(e.target.value)}
+                          min={todayStr}
+                          value={checkInDate}
+                          onChange={(e) => {
+                            setCheckInDate(e.target.value);
+                            if (checkOutDate && isBefore(parseLocalISO(checkOutDate), parseLocalISO(e.target.value))) {
+                              setCheckOutDate('');
+                            }
+                          }}
                           className="playful-input w-full h-14 font-black border-black bg-white"
                         />
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Label className="font-black text-xl flex items-center gap-2">
-                          <Clock size={24} className="text-playful-pink" strokeWidth={3} /> Duration
-                        </Label>
-                        <Select onValueChange={setWalkDuration} defaultValue="30">
-                          <SelectTrigger className="playful-input h-14 font-black border-black bg-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="border-4 border-black rounded-xl">
-                            <SelectItem value="30" className="font-black">30 Minutes ($15)</SelectItem>
-                            <SelectItem value="60" className="font-black">60 Minutes ($25)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+                      {service !== 'walk' ? (
+                        <div className="space-y-3">
+                          <Label className="font-black text-xl flex items-center gap-2">
+                            <ArrowRight size={24} className="text-playful-green" strokeWidth={3} /> Check-out Date
+                          </Label>
+                          <input
+                            type="date"
+                            min={checkInDate || todayStr}
+                            value={checkOutDate}
+                            onChange={(e) => setCheckOutDate(e.target.value)}
+                            className="playful-input w-full h-14 font-black border-black bg-white"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <Label className="font-black text-xl flex items-center gap-2">
+                            <Clock size={24} className="text-playful-pink" strokeWidth={3} /> Duration
+                          </Label>
+                          <Select onValueChange={setWalkDuration} defaultValue="30">
+                            <SelectTrigger className="playful-input h-14 font-black border-black bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="border-4 border-black rounded-xl">
+                              <SelectItem value="30" className="font-black">30 Minutes ($15)</SelectItem>
+                              <SelectItem value="60" className="font-black">60 Minutes ($25)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-          <div className="space-y-6 lg:sticky lg:top-8">
-            <motion.div 
+          <div className="space-y-6 lg:sticky lg:top-24">
+            <motion.div
               layout
               className="playful-card p-8 bg-playful-blue text-white space-y-8 border-4 border-black shadow-solid"
             >
@@ -213,29 +228,29 @@ export function BookingFlow() {
               </h2>
               <div className="space-y-6 font-bold border-t-4 border-black/20 pt-6">
                 <div className="flex justify-between text-lg items-center">
-                  <span className="opacity-70 text-sm uppercase tracking-widest font-black">Buddy</span>
+                  <span className="opacity-70 text-[10px] uppercase tracking-widest font-black">Buddy</span>
                   <span className="italic truncate max-w-[120px]">{dogs.find(d => d.id === selectedDog)?.name || '---'}</span>
                 </div>
                 <div className="flex justify-between text-lg items-center">
-                  <span className="opacity-70 text-sm uppercase tracking-widest font-black">Service</span>
+                  <span className="opacity-70 text-[10px] uppercase tracking-widest font-black">Service</span>
                   <span className="italic uppercase tracking-tighter font-black">{selectedServiceData?.name || '---'}</span>
                 </div>
                 <AnimatePresence mode="wait">
-                  {calculation.label && (
-                    <motion.div 
-                      key={calculation.label}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 10 }}
-                      className="flex justify-between text-lg items-center"
-                    >
-                      <span className="opacity-70 text-sm uppercase tracking-widest font-black">Details</span>
-                      <span className={cn("italic", !calculation.isValid && "text-playful-yellow text-xs")}>{calculation.label}</span>
-                    </motion.div>
-                  )}
+                  <motion.div
+                    key={calculation.label}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    className="flex justify-between text-lg items-center"
+                  >
+                    <span className="opacity-70 text-[10px] uppercase tracking-widest font-black">Details</span>
+                    <span className={cn("italic", !calculation.isValid && calculation.label && "text-playful-yellow text-xs")}>
+                      {calculation.label || '---'}
+                    </span>
+                  </motion.div>
                 </AnimatePresence>
                 <div className="flex justify-between font-black border-t-4 border-black/20 pt-6 mt-6">
-                  <span className="text-3xl italic tracking-tighter">TOTAL</span>
+                  <span className="text-3xl italic tracking-tighter uppercase">TOTAL</span>
                   <span className="text-4xl text-playful-yellow">
                     {calculation.total > 0 ? `$${calculation.total}` : '---'}
                   </span>
