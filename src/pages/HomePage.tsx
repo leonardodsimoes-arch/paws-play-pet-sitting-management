@@ -1,19 +1,17 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Dog, ShieldCheck, CalendarCheck, CreditCard, Sparkles, ArrowRight, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/use-auth-store';
 import { ThemeToggle } from '@/components/ThemeToggle';
 export function HomePage() {
-  const navigate = useNavigate();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const userRole = useAuthStore(s => s.user?.role);
   const logout = useAuthStore(s => s.logout);
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+const handleLogout = () => {
+  logout();
+};
   return (
     <div className="relative min-h-screen bg-[#FFFDF5]">
       {isAuthenticated && (
