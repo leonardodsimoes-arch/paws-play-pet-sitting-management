@@ -1,5 +1,12 @@
 /**
  * Wrangler config for the Cloudflare Durable Object template
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"sourcemap": false,
+	"name": "paws-and-play-jcp7nax742tlo3ecjyv9l",
+	"main": "worker/index.ts",
+	// rest UNCHANGED
+}
  * STRICTLY DO NOT MODIFY THIS FILE - Hidden from AI to prevent breaking core functionality
  */
  {
