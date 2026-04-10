@@ -11,7 +11,8 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "paws-and-play-jcp7nax742tlo3ecjyv9l",
+	// wrangler.jsonc
+"name": "paws-play-pet-sitting-management1",,
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
