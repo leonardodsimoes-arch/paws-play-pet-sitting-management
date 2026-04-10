@@ -107,13 +107,9 @@ export default ({ mode }: { mode: string }) => {
   return defineConfig({
     plugins: [react(), cloudflare(), watchDependenciesPlugin(), reloadTriggerPlugin()],
     build: {
-      minify: true,
-      sourcemap: "inline", // Use inline source maps for better error reporting
-      rollupOptions: {
-        output: {
-          sourcemapExcludeSources: false, // Include original source in source maps
-        },
-      },
+  minify: true,
+  sourcemap: false,
+},
     },
     customLogger: env.VITE_LOGGER_TYPE === 'json' ? customLogger : undefined,
     // Enable source maps in development too
