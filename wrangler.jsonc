@@ -5,7 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"sourcemap": false,
-	"name": "paws-play-pet-sitting-management1",
+	"name": "paws-play-pet-sitting-management3",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
