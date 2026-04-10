@@ -1,19 +1,11 @@
 /**
  * Wrangler config for the Cloudflare Durable Object template
-{
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"sourcemap": false,
-	"name": "paws-and-play-jcp7nax742tlo3ecjyv9l",
-	"main": "worker/index.ts",
-	// rest UNCHANGED
-}
  * STRICTLY DO NOT MODIFY THIS FILE - Hidden from AI to prevent breaking core functionality
  */
 {
-"sourcemap": false,
 	"$schema": "node_modules/wrangler/config-schema.json",
-	// wrangler.jsonc
-"name": "paws-play-pet-sitting-management1",
+	"sourcemap": false,
+	"name": "paws-play-pet-sitting-management1",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
