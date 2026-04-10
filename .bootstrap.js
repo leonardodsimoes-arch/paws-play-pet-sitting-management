@@ -80,7 +80,7 @@ function runSetupCommands() {
     const commands = [
     "bun install crypto",
     "bun install date-fns",
-    "bun add -d vite@^5.4.10 @vitejs/plugin-react@^4.3.4"
+    "bun add -d vite@8.0.8 @vitejs/plugin-react@6.0.1"
 ];
     
     if (commands.length === 0) {
