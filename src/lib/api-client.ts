@@ -1,8 +1,7 @@
 import { ApiResponse } from "../../shared/types"
 import { useAuthStore } from "@/store/use-auth-store"
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  // Use a stable selector for the token to prevent unnecessary reactivity issues
-  const token: string | null = useAuthStore.getState().token;
+  const token = useAuthStore.getState().token;
   const headers = new Headers(init?.headers);
   headers.set('Content-Type', 'application/json');
   if (token && typeof token === 'string') {
@@ -19,11 +18,14 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     }
     const json = (await res.json()) as ApiResponse<T>;
     if (!res.ok || json.success === false) {
-      const errorMessage = typeof json.error === 'string' ? json.error : `Request failed with status ${res.status}`;
-      throw new Error(errorMessage);
+      const errorMessage = typeof json.error === 'string' 
+        ? json.error 
+        : `Request failed with status ${res.status}`;
+      throw new Error(`[Status ${res.status}] ${errorMessage}`);
     }
+    // Distinguish between undefined (error) and null (valid empty state)
     if (json.data === undefined) {
-      throw new Error('Response data is missing');
+      throw new Error(`[Status ${res.status}] Response data is missing`);
     }
     return json.data as T;
   } catch (error) {

@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isWithinInterval, startOfDay, format, isSameDay } from 'date-fns';
+import { isWithinInterval, startOfDay, format, isSameDay, addHours } from 'date-fns';
 import { cn, parseLocalISO } from '@/lib/utils';
 import {
   AlertDialog,
@@ -42,13 +42,21 @@ export function AdminDashboard() {
     },
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
-  const today = startOfDay(new Date());
+  const todayStart = startOfDay(new Date());
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled') return false;
     if (!b.startDate || !b.endDate) return false;
     const start = startOfDay(parseLocalISO(b.startDate));
     const end = startOfDay(parseLocalISO(b.endDate));
-    return isWithinInterval(today, { start, end });
+    // Check if today falls between start and end, inclusive
+    return isWithinInterval(todayStart, { start, end });
+  }).sort((a, b) => {
+    // Sort by type: departing first in the morning, then stay, then daycare/walks
+    const aEnd = parseLocalISO(a.endDate);
+    const bEnd = parseLocalISO(b.endDate);
+    if (isSameDay(aEnd, todayStart) && !isSameDay(bEnd, todayStart)) return -1;
+    if (!isSameDay(aEnd, todayStart) && isSameDay(bEnd, todayStart)) return 1;
+    return 0;
   });
   const todayCareAlertDogs = dogs.filter(dog => {
     const isScheduledToday = activeBookings.some(b => b.dogId === dog.id);
@@ -101,7 +109,7 @@ export function AdminDashboard() {
                 <Clock className="text-playful-blue" strokeWidth={3} /> Daily Schedule
               </h2>
               <span className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                {activeBookings.length} Scheduled
+                {activeBookings.length} Active
               </span>
             </div>
             <div className="space-y-4">
@@ -115,63 +123,61 @@ export function AdminDashboard() {
                 let timeInfo = '';
                 let statusColor = 'bg-playful-blue text-white';
                 if (booking.serviceType === 'daycare' || booking.serviceType === 'walk') {
-                  statusLabel = 'Full Day';
-                  timeInfo = '7 AM - 7 PM';
+                  statusLabel = 'Daily';
+                  timeInfo = 'All Day';
                   statusColor = 'bg-playful-green text-black';
-                } else if (isSameDay(start, today)) {
-                  statusLabel = 'Arriving';
-                  timeInfo = '7:00 AM';
-                  statusColor = 'bg-playful-blue text-white';
-                } else if (isSameDay(end, today)) {
+                } else if (isSameDay(end, todayStart)) {
                   statusLabel = 'Departing';
                   timeInfo = '7:00 AM';
                   statusColor = 'bg-playful-pink text-white';
+                } else if (isSameDay(start, todayStart)) {
+                  statusLabel = 'Arriving';
+                  timeInfo = '7:00 AM';
+                  statusColor = 'bg-playful-blue text-white';
                 }
                 return (
-                  <div key={booking.id} className="playful-card p-5 flex items-center justify-between bg-white group hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-5">
-                      <div className={cn(
-                        "w-14 h-14 border-4 border-black rounded-2xl flex items-center justify-center font-black text-2xl uppercase shadow-solid-sm group-hover:rotate-6 transition-transform",
-                        booking.serviceType === 'stay' ? 'bg-playful-pink' : booking.serviceType === 'daycare' ? 'bg-playful-yellow' : 'bg-playful-blue'
-                      )}>
-                        {dog?.name?.[0] || '?'}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-xl italic uppercase tracking-tighter truncate max-w-[150px]">{dog?.name || 'Unknown Friend'}</h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
+                  <div key={booking.id} className="playful-card p-5 bg-white group hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-12 h-12 border-4 border-black rounded-xl flex items-center justify-center font-black text-xl uppercase shadow-solid-sm group-hover:rotate-6 transition-transform",
+                          booking.serviceType === 'stay' ? 'bg-playful-pink' : booking.serviceType === 'daycare' ? 'bg-playful-yellow' : 'bg-playful-blue'
+                        )}>
+                          {dog?.name?.[0] || '?'}
+                        </div>
+                        <div>
+                          <h4 className="font-black text-lg italic uppercase tracking-tighter truncate max-w-[150px]">{dog?.name || 'Unknown Friend'}</h4>
                           <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase whitespace-nowrap", statusColor)}>
                             {statusLabel} {timeInfo}
                           </span>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        {booking.status === 'pending' && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
+                              className="p-1 hover:bg-playful-green/20 rounded-lg text-playful-green"
+                            >
+                              <CheckCircle2 size={20} strokeWidth={3} />
+                            </button>
+                            <button
+                              onClick={() => setCancelBookingId(booking.id)}
+                              className="p-1 hover:bg-playful-pink/20 rounded-lg text-playful-pink"
+                            >
+                              <XCircle size={20} strokeWidth={3} />
+                            </button>
+                          </div>
+                        )}
+                        <span className="text-[9px] font-black border-black/20 border rounded px-1 uppercase opacity-50">{booking.status}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {booking.status === 'pending' && (
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
-                            className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green"
-                            title="Confirm Arrival"
-                          >
-                            <CheckCircle2 size={24} strokeWidth={3} />
-                          </button>
-                          <button
-                            onClick={() => setCancelBookingId(booking.id)}
-                            className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink"
-                            title="Cancel Booking"
-                          >
-                            <XCircle size={24} strokeWidth={3} />
-                          </button>
-                        </div>
-                      )}
-                      <span className={cn(
-                        "text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase",
-                        booking.status === 'confirmed' ? 'bg-playful-green text-black' : 'bg-playful-yellow text-black'
-                      )}>
-                        {booking.status}
-                      </span>
-                    </div>
+                    {dog?.instructions && (
+                      <div className="bg-playful-yellow/10 border-2 border-black/5 p-2 rounded-lg text-[11px] font-bold italic text-muted-foreground flex items-center gap-2">
+                        <Utensils size={12} className="shrink-0" />
+                        <span className="truncate">{dog.instructions}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -223,7 +229,7 @@ export function AdminDashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-3xl font-black italic tracking-tight uppercase">Cancel Booking?</AlertDialogTitle>
             <AlertDialogDescription className="text-lg font-bold text-muted-foreground">
-              This will remove the buddy from the daily schedule. This action is not reversible.
+              This will remove the buddy from the daily schedule.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-4">
