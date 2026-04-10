@@ -11,7 +11,7 @@ import { Dog as DogType } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn, parseLocalISO } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { differenceInDays } from 'date-fns';
 export function BookingFlow() {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export function BookingFlow() {
       const price = walkDuration === '60' ? 25 : 15;
       return { total: price, units: 1, label: walkDuration === '60' ? '60 min walk' : '30 min walk', isValid: true };
     }
-    if (!checkOutDate) return { total: 0, units: 0, label: '', isValid: false };
+    if (!checkOutDate) return { total: 0, units: 0, label: 'Waiting for checkout...', isValid: false };
     const start = parseLocalISO(checkInDate);
     const end = parseLocalISO(checkOutDate);
     const days = differenceInDays(end, start);
@@ -57,14 +57,10 @@ export function BookingFlow() {
       return;
     }
     if (service === 'stay' && (!checkOutDate || differenceInDays(parseLocalISO(checkOutDate), parseLocalISO(checkInDate)) < 1)) {
-      toast.error("Invalid Stay", { 
+      toast.error("Invalid Stay", {
         description: "Boarding requires at least one night (Check-out must be after Check-in day).",
         icon: <AlertCircle className="text-playful-pink" />
       });
-      return;
-    }
-    if (service !== 'walk' && !checkOutDate) {
-      toast.error("Oops!", { description: "Please select a checkout date." });
       return;
     }
     setIsSubmitting(true);
@@ -137,8 +133,8 @@ export function BookingFlow() {
                       }}
                       className={cn(
                         "text-left p-6 border-4 border-black rounded-2xl transition-all relative overflow-hidden group",
-                        service === s.id 
-                          ? 'bg-playful-yellow shadow-solid-sm translate-x-[2px] translate-y-[2px]' 
+                        service === s.id
+                          ? 'bg-playful-yellow shadow-solid-sm translate-x-[2px] translate-y-[2px]'
                           : 'bg-white shadow-solid hover:bg-muted/50'
                       )}
                     >
@@ -171,7 +167,7 @@ export function BookingFlow() {
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => setCheckInDate(e.target.value)}
-                        className="playful-input w-full h-14 font-black border-black"
+                        className="playful-input w-full h-14 font-black border-black bg-white"
                       />
                     </div>
                     {service !== 'walk' ? (
@@ -183,7 +179,7 @@ export function BookingFlow() {
                           type="date"
                           min={checkInDate || new Date().toISOString().split('T')[0]}
                           onChange={(e) => setCheckOutDate(e.target.value)}
-                          className="playful-input w-full h-14 font-black border-black"
+                          className="playful-input w-full h-14 font-black border-black bg-white"
                         />
                       </div>
                     ) : (
@@ -192,7 +188,7 @@ export function BookingFlow() {
                           <Clock size={24} className="text-playful-pink" strokeWidth={3} /> Duration
                         </Label>
                         <Select onValueChange={setWalkDuration} defaultValue="30">
-                          <SelectTrigger className="playful-input h-14 font-black border-black">
+                          <SelectTrigger className="playful-input h-14 font-black border-black bg-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="border-4 border-black rounded-xl">
@@ -203,36 +199,46 @@ export function BookingFlow() {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm font-bold text-muted-foreground italic">
-                    * {service === 'stay' ? 'Stay check-out is strictly 7:00 AM next day.' : service === 'daycare' ? 'Daycare check-out is 7:00 PM.' : 'Walk timing starts at 7:00 AM.'}
-                  </p>
                 </motion.div>
               )}
             </div>
           </div>
           <div className="space-y-6 lg:sticky lg:top-8">
-            <div className="playful-card p-8 bg-playful-blue text-white space-y-8 border-4 border-black shadow-solid">
+            <motion.div 
+              layout
+              className="playful-card p-8 bg-playful-blue text-white space-y-8 border-4 border-black shadow-solid"
+            >
               <h2 className="text-3xl font-black italic flex items-center gap-3">
                 <Calculator strokeWidth={3} /> SUMMARY
               </h2>
               <div className="space-y-6 font-bold border-t-4 border-black/20 pt-6">
                 <div className="flex justify-between text-lg items-center">
                   <span className="opacity-70 text-sm uppercase tracking-widest font-black">Buddy</span>
-                  <span className="italic">{dogs.find(d => d.id === selectedDog)?.name || '---'}</span>
+                  <span className="italic truncate max-w-[120px]">{dogs.find(d => d.id === selectedDog)?.name || '---'}</span>
                 </div>
                 <div className="flex justify-between text-lg items-center">
                   <span className="opacity-70 text-sm uppercase tracking-widest font-black">Service</span>
                   <span className="italic uppercase tracking-tighter font-black">{selectedServiceData?.name || '---'}</span>
                 </div>
-                {calculation.units > 0 && (
-                  <div className="flex justify-between text-lg items-center">
-                    <span className="opacity-70 text-sm uppercase tracking-widest font-black">Quantity</span>
-                    <span className={cn("italic", !calculation.isValid && "text-playful-pink")}>{calculation.label}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-4xl font-black border-t-4 border-black/20 pt-6 mt-6">
-                  <span className="italic tracking-tighter">TOTAL</span>
-                  <span className="text-playful-yellow">${calculation.total}</span>
+                <AnimatePresence mode="wait">
+                  {calculation.label && (
+                    <motion.div 
+                      key={calculation.label}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="flex justify-between text-lg items-center"
+                    >
+                      <span className="opacity-70 text-sm uppercase tracking-widest font-black">Details</span>
+                      <span className={cn("italic", !calculation.isValid && "text-playful-yellow text-xs")}>{calculation.label}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <div className="flex justify-between font-black border-t-4 border-black/20 pt-6 mt-6">
+                  <span className="text-3xl italic tracking-tighter">TOTAL</span>
+                  <span className="text-4xl text-playful-yellow">
+                    {calculation.total > 0 ? `$${calculation.total}` : '---'}
+                  </span>
                 </div>
               </div>
               <Button
@@ -245,7 +251,7 @@ export function BookingFlow() {
               >
                 {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "CONFIRM BOOKING"}
               </Button>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

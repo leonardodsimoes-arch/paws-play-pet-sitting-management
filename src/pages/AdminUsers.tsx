@@ -26,12 +26,12 @@ export function AdminUsers() {
     const clients = (usersPage?.items || []).filter(u => u.role === 'client');
     const searchLower = searchTerm.toLowerCase();
     return clients
-      .filter(u => u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower))
+      .filter(u => (u.name?.toLowerCase() || '').includes(searchLower) || (u.email?.toLowerCase() || '').includes(searchLower))
       .map(client => {
         const clientDogs = dogs.filter(d => d.ownerId === client.id);
         const unpaidBalance = invoices
           .filter(i => i.ownerId === client.id && i.status === 'unpaid')
-          .reduce((sum, i) => sum + i.amount, 0);
+          .reduce((sum, i) => sum + (i.amount || 0), 0);
         return {
           ...client,
           dogCount: clientDogs.length,
@@ -77,11 +77,11 @@ export function AdminUsers() {
             >
               <div className="flex items-center gap-5 flex-1 w-full md:w-auto">
                 <div className="w-16 h-16 rounded-3xl bg-playful-yellow border-4 border-black flex items-center justify-center font-black text-2xl shadow-solid-sm rotate-3 group-hover:rotate-6 transition-transform">
-                  {client.name[0]}
+                  {client.name?.[0] || '?'}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter leading-none mb-1">{client.name}</h3>
-                  <p className="font-bold text-muted-foreground text-sm uppercase tracking-widest truncate">{client.email}</p>
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter leading-none mb-1">{client.name || 'Anonymous Parent'}</h3>
+                  <p className="font-bold text-muted-foreground text-sm uppercase tracking-widest truncate">{client.email || 'No email registered'}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-10 items-center justify-center md:justify-end w-full md:w-auto">
@@ -99,8 +99,8 @@ export function AdminUsers() {
                     ${client.unpaidBalance.toFixed(2)}
                   </p>
                 </div>
-                <Button asChild className="playful-btn bg-playful-blue text-white border-black h-14 px-8 text-lg hover:bg-playful-blue/90 shadow-solid transition-all hover:scale-105 active:scale-95">
-                  <Link to={`/admin/clients/${client.id}`} className="flex items-center">
+                <Button asChild disabled={!client.id} className="playful-btn bg-playful-blue text-white border-black h-14 px-8 text-lg hover:bg-playful-blue/90 shadow-solid transition-all hover:scale-105 active:scale-95">
+                  <Link to={client.id ? `/admin/clients/${client.id}` : '#'} className="flex items-center">
                     Manage Parent <ArrowRight className="ml-2 h-5 w-5" strokeWidth={3} />
                   </Link>
                 </Button>
