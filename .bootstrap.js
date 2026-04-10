@@ -79,7 +79,8 @@ function updateWranglerJsonc() {
 function runSetupCommands() {
     const commands = [
     "bun install crypto",
-    "bun install date-fns"
+    "bun install date-fns",
+    "bun add -d vite@^5.4.10 @vitejs/plugin-react@^4.3.4"
 ];
     
     if (commands.length === 0) {
