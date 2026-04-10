@@ -12,7 +12,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { cn, parseLocalISO } from '@/lib/utils';
 import { useAuthStore } from '@/store/use-auth-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { differenceInDays, isBefore, startOfDay } from 'date-fns';
+import { differenceInDays, isBefore } from 'date-fns';
 export function BookingFlow() {
   const navigate = useNavigate();
   const userId = useAuthStore(s => s.user?.id);
@@ -69,7 +69,8 @@ export function BookingFlow() {
       } else if (service === 'daycare') {
         endDateStr = `${checkOutDate}T19:00:00`;
       } else if (service === 'walk') {
-        endDateStr = `${checkInDate}T07:30:00`;
+        // Correct duration logic for walks
+        endDateStr = walkDuration === '60' ? `${checkInDate}T08:00:00` : `${checkInDate}T07:30:00`;
       }
       await api('/api/bookings', {
         method: 'POST',
@@ -82,7 +83,7 @@ export function BookingFlow() {
           total: calculation.total
         })
       });
-      toast.success("Booking Requested!", { 
+      toast.success("Booking Requested!", {
         description: "We'll confirm your spot shortly.",
         icon: <Sparkles className="text-playful-yellow" />
       });
@@ -159,9 +160,9 @@ export function BookingFlow() {
               </div>
               <AnimatePresence>
                 {service && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }} 
-                    animate={{ opacity: 1, height: 'auto' }} 
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     className="space-y-6 overflow-hidden pt-4"
                   >
@@ -252,7 +253,7 @@ export function BookingFlow() {
                 <div className="flex justify-between font-black border-t-4 border-black/20 pt-6 mt-6">
                   <span className="text-3xl italic tracking-tighter uppercase">TOTAL</span>
                   <span className="text-4xl text-playful-yellow">
-                    {calculation.total > 0 ? `$${calculation.total}` : '---'}
+                    {calculation.total > 0 ? `${calculation.total}` : '---'}
                   </span>
                 </div>
               </div>

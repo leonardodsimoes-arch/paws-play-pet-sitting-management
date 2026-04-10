@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isWithinInterval, startOfDay, format, isSameDay, addHours } from 'date-fns';
+import { isWithinInterval, startOfDay, format, isSameDay } from 'date-fns';
 import { cn, parseLocalISO } from '@/lib/utils';
 import {
   AlertDialog,
@@ -44,16 +44,17 @@ export function AdminDashboard() {
   });
   const todayStart = startOfDay(new Date());
   const activeBookings = bookings.filter(b => {
-    if (b.status === 'cancelled') return false;
+    // Exclude cancelled and completed bookings from the daily schedule
+    if (b.status === 'cancelled' || b.status === 'completed') return false;
     if (!b.startDate || !b.endDate) return false;
     const start = startOfDay(parseLocalISO(b.startDate));
     const end = startOfDay(parseLocalISO(b.endDate));
-    // Check if today falls between start and end, inclusive
+    // Check if today falls between start and end inclusive (handles 7AM-7AM boundaries logically)
     return isWithinInterval(todayStart, { start, end });
   }).sort((a, b) => {
-    // Sort by type: departing first in the morning, then stay, then daycare/walks
     const aEnd = parseLocalISO(a.endDate);
     const bEnd = parseLocalISO(b.endDate);
+    // Sort by type: departing first in the morning
     if (isSameDay(aEnd, todayStart) && !isSameDay(bEnd, todayStart)) return -1;
     if (!isSameDay(aEnd, todayStart) && isSameDay(bEnd, todayStart)) return 1;
     return 0;
