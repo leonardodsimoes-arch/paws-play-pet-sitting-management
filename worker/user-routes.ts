@@ -2,7 +2,7 @@ import { Hono, Context } from "hono";
 import type { Env } from './core-utils';
 import { UserEntity, DogEntity, BookingEntity, InvoiceEntity } from "./entities";
 import { ok, bad, notFound, Index } from './core-utils';
-import type { Dog, Booking, User, LoginPayload, AuthResponse } from "@shared/types";
+import type { Dog, Booking, User, LoginPayload, AuthResponse, RegisterPayload } from "@shared/types";
 async function getAuthUser(c: Context<{ Bindings: Env }>): Promise<User | null> {
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
@@ -114,26 +114,36 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, booking);
   });
   app.post('/api/auth/register', async (c) => {
-    const { 
-      name, email, password, phone, 
-      address, city, state, zip, 
-      emergencyName, emergencyPhone 
-    } = await c.req.json() as any;
-    if (!name || !email || !password) return bad(c, 'Missing required fields');
-    const usersPage = await UserEntity.list(c.env);
-    if (usersPage.items.some(u => u.email === email)) return bad(c, 'Email already in use');
-    const user = await UserEntity.create(c.env, {
-      id: crypto.randomUUID(),
-      name, email, role: 'client', password,
-      phone: phone || "",
-      address: address || "",
-      city: city || "",
-      state: state || "",
-      zip: zip || "",
-      emergencyName: emergencyName || "",
-      emergencyPhone: emergencyPhone || ""
-    });
-    return ok(c, user);
+    try {
+      const payload = await c.req.json() as RegisterPayload;
+      const { 
+        name, email, password, phone, 
+        address, city, state, zip, 
+        emergencyName, emergencyPhone 
+      } = payload;
+      if (!name || !email || !password) return bad(c, 'Missing required fields');
+      const usersPage = await UserEntity.list(c.env);
+      if (usersPage.items.some(u => u.email === email)) return bad(c, 'Email already in use');
+      const newUser: User = {
+        id: crypto.randomUUID(),
+        name,
+        email,
+        role: 'client',
+        password,
+        phone: phone ?? "",
+        address: address ?? "",
+        city: city ?? "",
+        state: state ?? "",
+        zip: zip ?? "",
+        emergencyName: emergencyName ?? "",
+        emergencyPhone: emergencyPhone ?? ""
+      };
+      const user = await UserEntity.create(c.env, newUser);
+      return ok(c, user);
+    } catch (e) {
+      console.error(`[AUTH] Register error:`, e);
+      return bad(c, 'Registration process failed');
+    }
   });
   app.get('/api/invoices', async (c) => {
     const user = await getAuthUser(c);

@@ -3,13 +3,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { Dog, Mail, User as UserIcon, Lock, Loader2, Sparkles, Phone, MapPin, LifeBuoy, ArrowRight } from 'lucide-react';
+import { Dog, Mail, User as UserIcon, Loader2, Sparkles, Phone, MapPin, LifeBuoy, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { motion } from 'framer-motion';
+import type { RegisterPayload, User } from '@shared/types';
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid fluffy email"),
@@ -32,10 +33,10 @@ export function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { 
-      name: '', 
-      email: '', 
-      password: '', 
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
       confirmPassword: '',
       phone: '',
       address: '',
@@ -49,9 +50,23 @@ export function RegisterPage() {
   const onSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
     try {
-      await api('/api/auth/register', {
+      // Map Zod form values to clean RegisterPayload
+      const { confirmPassword, ...rest } = values;
+      const payload: RegisterPayload = {
+        name: rest.name,
+        email: rest.email,
+        password: rest.password,
+        phone: rest.phone ?? "",
+        address: rest.address ?? "",
+        city: rest.city ?? "",
+        state: rest.state ?? "",
+        zip: rest.zip ?? "",
+        emergencyName: rest.emergencyName ?? "",
+        emergencyPhone: rest.emergencyPhone ?? ""
+      };
+      await api<User>('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify(values)
+        body: JSON.stringify(payload)
       });
       toast.success("Welcome to the Pack!", {
         description: "Your account has been created. Please log in to continue.",
@@ -79,7 +94,6 @@ export function RegisterPage() {
           <p className="font-bold text-muted-foreground">The beginning of a fluffy friendship!</p>
         </header>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          {/* Section: Basic Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-b-2 border-black/10 pb-2">
               <UserIcon className="text-playful-blue" size={20} strokeWidth={3} />
@@ -108,7 +122,6 @@ export function RegisterPage() {
               </div>
             </div>
           </div>
-          {/* Section: Contact & Home */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-b-2 border-black/10 pb-2">
               <MapPin className="text-playful-pink" size={20} strokeWidth={3} />
@@ -144,7 +157,6 @@ export function RegisterPage() {
               </div>
             </div>
           </div>
-          {/* Section: Emergency */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-b-2 border-black/10 pb-2">
               <LifeBuoy className="text-playful-blue" size={20} strokeWidth={3} />
