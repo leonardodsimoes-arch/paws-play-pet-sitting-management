@@ -21,7 +21,7 @@ export function AdminBilling() {
   const userMap = useMemo(() => {
     const map: Record<string, User> = {};
     (usersPage?.items || []).forEach(user => {
-      map[user.id] = user;
+      if (user?.id) map[user.id] = user;
     });
     return map;
   }, [usersPage]);
@@ -43,15 +43,16 @@ export function AdminBilling() {
       if (!searchTerm) return true;
       if (!user) return false;
       return (
-        user.name.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower)
+        (user.name?.toLowerCase() || '').includes(searchLower) ||
+        (user.email?.toLowerCase() || '').includes(searchLower)
       );
     });
   }, [invoices, userMap, searchTerm]);
   const stats = useMemo(() => {
     return filteredInvoices.reduce((acc, inv) => {
-      if (inv.status === 'paid') acc.collected += inv.amount;
-      else acc.pending += inv.amount;
+      const amount = Number(inv.amount) || 0;
+      if (inv.status === 'paid') acc.collected += amount;
+      else acc.pending += amount;
       return acc;
     }, { collected: 0, pending: 0 });
   }, [filteredInvoices]);
@@ -128,9 +129,9 @@ export function AdminBilling() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground font-black uppercase tracking-wider">
-                        {new Date(invoice.createdAt).toLocaleDateString()}
+                        {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 font-black text-xl italic tracking-tighter">${invoice.amount}</td>
+                      <td className="px-6 py-4 font-black text-xl italic tracking-tighter">${Number(invoice.amount || 0).toFixed(2)}</td>
                       <td className="px-6 py-4">
                         {invoice.status === 'paid' ? (
                           <span className="inline-flex items-center gap-1.5 text-playful-green bg-playful-green/10 px-4 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase">

@@ -45,6 +45,7 @@ export function AdminDashboard() {
   const today = startOfDay(new Date());
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled') return false;
+    if (!b.startDate || !b.endDate) return false;
     const start = startOfDay(parseLocalISO(b.startDate));
     const end = startOfDay(parseLocalISO(b.endDate));
     return isWithinInterval(today, { start, end });
@@ -85,7 +86,7 @@ export function AdminDashboard() {
             { label: 'Care Alerts', value: todayCareAlertDogs.length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
           ].map((stat, i) => (
             <motion.div key={i} whileHover={{ y: -4 }} className={`playful-card p-8 ${stat.color} ${stat.textColor} flex items-center gap-6`}>
-              <div className="bg-white text-black p-4 rounded-2xl border-4 border-black"><stat.icon size={32} strokeWidth={3} /></div>
+              <div className="bg-white text-black p-4 rounded-2xl border-4 border-black shrink-0"><stat.icon size={32} strokeWidth={3} /></div>
               <div>
                 <p className="font-black text-5xl italic leading-none">{stat.value}</p>
                 <p className="font-black uppercase tracking-widest text-xs opacity-80 mt-1">{stat.label}</p>
@@ -100,7 +101,7 @@ export function AdminDashboard() {
                 <Clock className="text-playful-blue" strokeWidth={3} /> Daily Schedule
               </h2>
               <span className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                Today: {format(new Date(), 'MMM d')}
+                {activeBookings.length} Scheduled
               </span>
             </div>
             <div className="space-y-4">
@@ -108,7 +109,6 @@ export function AdminDashboard() {
                 <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">No activities scheduled for today.</div>
               ) : activeBookings.map(booking => {
                 const dog = dogs.find(d => d.id === booking.dogId);
-                const colorMap = { stay: 'bg-playful-pink', daycare: 'bg-playful-yellow', walk: 'bg-playful-blue' };
                 const start = startOfDay(parseLocalISO(booking.startDate));
                 const end = startOfDay(parseLocalISO(booking.endDate));
                 let statusLabel = 'In House';
@@ -130,12 +130,15 @@ export function AdminDashboard() {
                 return (
                   <div key={booking.id} className="playful-card p-5 flex items-center justify-between bg-white group hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-5">
-                      <div className={`w-14 h-14 ${colorMap[booking.serviceType as keyof typeof colorMap] || 'bg-muted'} border-4 border-black rounded-2xl flex items-center justify-center font-black text-2xl uppercase shadow-solid-sm group-hover:rotate-6 transition-transform`}>
+                      <div className={cn(
+                        "w-14 h-14 border-4 border-black rounded-2xl flex items-center justify-center font-black text-2xl uppercase shadow-solid-sm group-hover:rotate-6 transition-transform",
+                        booking.serviceType === 'stay' ? 'bg-playful-pink' : booking.serviceType === 'daycare' ? 'bg-playful-yellow' : 'bg-playful-blue'
+                      )}>
                         {dog?.name?.[0] || '?'}
                       </div>
                       <div>
-                        <h4 className="font-black text-xl italic uppercase tracking-tighter">{dog?.name || 'Unknown'}</h4>
-                        <div className="flex items-center gap-2">
+                        <h4 className="font-black text-xl italic uppercase tracking-tighter truncate max-w-[150px]">{dog?.name || 'Unknown Friend'}</h4>
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{booking.serviceType}</span>
                           <span className={cn("text-[10px] font-black px-2 py-0.5 rounded border-2 border-black uppercase whitespace-nowrap", statusColor)}>
                             {statusLabel} {timeInfo}
@@ -149,12 +152,14 @@ export function AdminDashboard() {
                           <button
                             onClick={() => statusMutation.mutate({ id: booking.id, status: 'confirmed' })}
                             className="p-2 hover:bg-playful-green/20 rounded-xl transition-colors text-playful-green"
+                            title="Confirm Arrival"
                           >
                             <CheckCircle2 size={24} strokeWidth={3} />
                           </button>
                           <button
                             onClick={() => setCancelBookingId(booking.id)}
                             className="p-2 hover:bg-playful-pink/20 rounded-xl transition-colors text-playful-pink"
+                            title="Cancel Booking"
                           >
                             <XCircle size={24} strokeWidth={3} />
                           </button>
@@ -172,45 +177,45 @@ export function AdminDashboard() {
               })}
             </div>
           </section>
-          <section className="space-y-6">
-            <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase flex items-center gap-2">
-              <AlertTriangle strokeWidth={3} /> Care & Safety Notices
-            </h2>
-            <div className="space-y-4">
-              {todayCareAlertDogs.length === 0 ? (
-                <div className="p-8 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black">All clear for today's visitors!</div>
-              ) : todayCareAlertDogs.map(dog => (
-                <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white shrink-0">
-                      <AlertTriangle size={24} strokeWidth={3} />
-                    </div>
-                    <div className="space-y-4 flex-1 min-w-0">
-                      <div className="flex justify-between items-center gap-2">
-                        <h4 className="font-black text-2xl italic tracking-tighter uppercase truncate">{dog.name}</h4>
-                        <Link to={`/dogs/${dog.id}`} className="text-playful-blue font-black text-xs hover:underline flex items-center gap-1 uppercase shrink-0">
-                          Profile <ArrowRight size={14} strokeWidth={3} />
-                        </Link>
+          {todayCareAlertDogs.length > 0 && (
+            <section className="space-y-6">
+              <h2 className="text-3xl font-black italic tracking-tight text-playful-pink uppercase flex items-center gap-2">
+                <AlertTriangle strokeWidth={3} /> Care Notices
+              </h2>
+              <div className="space-y-4">
+                {todayCareAlertDogs.map(dog => (
+                  <div key={dog.id} className="playful-card p-6 border-l-[12px] border-l-playful-pink bg-white">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-playful-pink p-3 rounded-2xl border-2 border-black shadow-solid-sm text-white shrink-0">
+                        <AlertTriangle size={24} strokeWidth={3} />
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {(dog.behavior === 'reactive' || dog.behavior === 'aggressive') && (
-                          <span className="bg-playful-pink text-white px-3 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">
-                            {dog.behavior}
+                      <div className="space-y-4 flex-1 min-w-0">
+                        <div className="flex justify-between items-center gap-2">
+                          <h4 className="font-black text-2xl italic tracking-tighter uppercase truncate">{dog.name || 'Anonymous'}</h4>
+                          <Link to={`/dogs/${dog.id}`} className="text-playful-blue font-black text-xs hover:underline flex items-center gap-1 uppercase shrink-0">
+                            Profile <ArrowRight size={14} strokeWidth={3} />
+                          </Link>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(dog.behavior === 'reactive' || dog.behavior === 'aggressive') && (
+                            <span className="bg-playful-pink text-white px-3 py-1 rounded-full text-[10px] font-black uppercase border-2 border-black">
+                              {dog.behavior}
+                            </span>
+                          )}
+                          <span className="bg-playful-blue/10 text-playful-blue px-3 py-1 rounded-full text-[10px] font-black border-2 border-playful-blue/20 flex items-center gap-1 uppercase">
+                            <Utensils size={12} strokeWidth={3} /> {dog.diet ? (dog.diet.length > 20 ? dog.diet.slice(0, 20) + '...' : dog.diet) : 'Standard'}
                           </span>
-                        )}
-                        <span className="bg-playful-blue/10 text-playful-blue px-3 py-1 rounded-full text-[10px] font-black border-2 border-playful-blue/20 flex items-center gap-1 uppercase">
-                          <Utensils size={12} strokeWidth={3} /> Diet: {dog.diet ? (dog.diet.length > 20 ? dog.diet.slice(0, 20) + '...' : dog.diet) : 'Standard'}
-                        </span>
-                      </div>
-                      <div className="bg-muted/30 border-4 border-black p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">
-                        "{dog.instructions || 'No special instructions recorded'}"
+                        </div>
+                        <div className="bg-muted/30 border-4 border-black p-4 rounded-2xl italic font-bold text-muted-foreground text-sm">
+                          "{dog.instructions || 'No special instructions recorded'}"
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
       <AlertDialog open={!!cancelBookingId} onOpenChange={(open) => !open && setCancelBookingId(null)}>
@@ -223,7 +228,7 @@ export function AdminDashboard() {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-4">
             <AlertDialogCancel className="playful-btn bg-white border-black text-black">Keep Booking</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => cancelBookingId && statusMutation.mutate({ id: cancelBookingId, status: 'cancelled' })}
               className="playful-btn bg-playful-pink text-white border-black hover:bg-playful-pink/90"
             >
