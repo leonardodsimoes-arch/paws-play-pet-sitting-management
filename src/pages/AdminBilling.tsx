@@ -6,7 +6,8 @@ import { api } from '@/lib/api-client';
 import { Invoice, User } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 export function AdminBilling() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,110 +61,128 @@ export function AdminBilling() {
     toast.loading("Generating Fluffy PDF...", { id: 'pdf' });
     setTimeout(() => {
       toast.success("Invoice Downloaded!", { id: 'pdf' });
-    }, 1500);
+    }, 1200);
   };
   return (
     <AppLayout container>
-      <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-black flex items-center gap-3 italic tracking-tight uppercase">
-              FLUFFY BILLING <PiggyBank className="text-playful-green" strokeWidth={3} />
+      <div className="space-y-10 max-w-7xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-5xl font-black flex items-center gap-3 italic tracking-tight uppercase">
+              FLUFFY BILLING <PiggyBank className="text-playful-green shrink-0" size={40} strokeWidth={3} />
             </h1>
-            <p className="font-bold text-muted-foreground text-lg">Financial Transparency & Revenue</p>
+            <p className="font-bold text-muted-foreground text-xl">Financial Transparency & Revenue</p>
           </div>
           <div className="relative max-w-sm w-full group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" strokeWidth={3} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-playful-green transition-colors" size={20} strokeWidth={3} />
             <Input
-              className="playful-input pl-11 h-14 hover:shadow-solid transition-shadow border-4 border-black"
+              className="playful-input pl-12 h-14 border-4 border-black hover:shadow-solid focus:border-playful-green transition-all"
               placeholder="Search fluffy parents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </header>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <motion.div whileHover={{ y: -4 }} className="playful-card p-8 bg-playful-green text-black border-4 border-black shadow-solid">
-            <p className="font-black uppercase text-xs tracking-widest opacity-70">Collected</p>
-            <p className="text-5xl font-black italic tracking-tighter">${stats.collected.toFixed(2)}</p>
-          </motion.div>
-          <motion.div whileHover={{ y: -4 }} className="playful-card p-8 bg-playful-pink text-white border-4 border-black shadow-solid">
-            <p className="font-black uppercase text-xs tracking-widest opacity-70">Pending Dues</p>
-            <p className="text-5xl font-black italic tracking-tighter">${stats.pending.toFixed(2)}</p>
-          </motion.div>
-          <motion.div whileHover={{ y: -4 }} className="playful-card p-8 bg-playful-blue text-white border-4 border-black shadow-solid">
-            <p className="font-black uppercase text-xs tracking-widest opacity-70">Total Revenue</p>
-            <p className="text-5xl font-black italic tracking-tighter">${(stats.collected + stats.pending).toFixed(2)}</p>
-          </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { label: 'Collected', value: stats.collected, color: 'bg-playful-green', text: 'text-black' },
+            { label: 'Pending Dues', value: stats.pending, color: 'bg-playful-pink', text: 'text-white' },
+            { label: 'Total Revenue', value: stats.collected + stats.pending, color: 'bg-playful-blue', text: 'text-white' },
+          ].map((stat, i) => (
+            <motion.div 
+              key={i}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -6, rotate: 1 }}
+              className={cn("playful-card p-8 border-4 border-black shadow-solid relative overflow-hidden", stat.color, stat.text)}
+            >
+              <p className="font-black uppercase text-xs tracking-widest opacity-70 mb-2">{stat.label}</p>
+              <p className="text-6xl font-black italic tracking-tighter leading-none">${stat.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </motion.div>
+          ))}
         </div>
         <div className="playful-card overflow-hidden bg-white border-4 border-black shadow-solid">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-muted border-b-4 border-black">
+              <thead className="bg-muted/50 border-b-4 border-black">
                 <tr>
-                  <th className="px-6 py-5 text-sm font-black uppercase tracking-widest">Parent</th>
-                  <th className="px-6 py-5 text-sm font-black uppercase tracking-widest">Date</th>
-                  <th className="px-6 py-5 text-sm font-black uppercase tracking-widest">Amount</th>
-                  <th className="px-6 py-5 text-sm font-black uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-5 text-sm font-black uppercase tracking-widest text-right">Actions</th>
+                  <th className="px-8 py-6 text-sm font-black uppercase tracking-widest">Parent</th>
+                  <th className="px-8 py-6 text-sm font-black uppercase tracking-widest">Date</th>
+                  <th className="px-8 py-6 text-sm font-black uppercase tracking-widest">Amount</th>
+                  <th className="px-8 py-6 text-sm font-black uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-6 text-sm font-black uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="font-bold text-sm">
+              <tbody className="font-bold text-base">
                 {(loadingInvoices || loadingUsers) ? (
-                  <tr><td colSpan={5} className="py-12 text-center"><Loader2 className="animate-spin mx-auto text-playful-pink h-8 w-8" strokeWidth={3} /></td></tr>
+                  <tr><td colSpan={5} className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-playful-pink h-12 w-12" strokeWidth={3} /></td></tr>
                 ) : filteredInvoices.length === 0 ? (
-                  <tr><td colSpan={5} className="py-12 text-center text-muted-foreground italic font-black">No fluffy invoices found matching your criteria.</td></tr>
+                  <tr><td colSpan={5} className="py-20 text-center text-muted-foreground italic font-black text-xl">No fluffy invoices found matching your criteria.</td></tr>
                 ) : filteredInvoices.map((invoice) => {
                   const user = userMap[invoice.ownerId];
                   return (
-                    <tr key={invoice.id} className="border-b-2 border-black/10 last:border-0 hover:bg-playful-yellow/5 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-playful-yellow border-2 border-black flex items-center justify-center font-black rotate-3 shadow-solid-sm text-lg">
+                    <motion.tr 
+                      key={invoice.id} 
+                      className="border-b-2 border-black/10 last:border-0 hover:bg-playful-yellow/10 transition-colors group"
+                    >
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 shrink-0 rounded-2xl bg-playful-yellow border-2 border-black flex items-center justify-center font-black rotate-3 shadow-solid-sm text-xl group-hover:rotate-6 transition-transform">
                             {user?.name?.[0] || '?'}
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-lg font-black italic uppercase tracking-tighter leading-none mb-1">{user?.name || 'Unknown Client'}</span>
-                            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">{user?.email || 'No email recorded'}</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xl font-black italic uppercase tracking-tighter leading-none mb-1 truncate">{user?.name || 'Unknown Client'}</span>
+                            <span className="text-xs text-muted-foreground font-black uppercase tracking-widest truncate">{user?.email || 'No email recorded'}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground font-black uppercase tracking-wider">
+                      <td className="px-8 py-5 text-muted-foreground font-black uppercase tracking-wider text-sm">
                         {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 font-black text-xl italic tracking-tighter">${Number(invoice.amount || 0).toFixed(2)}</td>
-                      <td className="px-6 py-4">
-                        {invoice.status === 'paid' ? (
-                          <span className="inline-flex items-center gap-1.5 text-playful-green bg-playful-green/10 px-4 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase">
-                            <CheckCircle2 className="w-3 h-3" strokeWidth={3} /> PAID
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-playful-pink bg-playful-pink/10 px-4 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase">
-                            <XCircle className="w-3 h-3" strokeWidth={3} /> UNPAID
-                          </span>
-                        )}
+                      <td className="px-8 py-5 font-black text-2xl italic tracking-tighter">
+                        ${Number(invoice.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-8 py-5">
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border-2 border-black text-[10px] font-black uppercase shadow-solid-sm",
+                          invoice.status === 'paid' ? 'bg-playful-green text-black' : 'bg-playful-pink text-white'
+                        )}>
+                          {invoice.status === 'paid' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          {invoice.status}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
                         <div className="flex justify-end gap-3">
-                          {invoice.status === 'unpaid' && (
-                            <button
-                              onClick={() => payMutation.mutate(invoice.id)}
-                              disabled={payMutation.isPending}
-                              className="p-3 hover:bg-playful-green/20 rounded-xl transition-all active:scale-90 border-2 border-black bg-playful-green text-black shadow-solid-sm"
-                              title="Mark as Paid"
-                            >
-                              <DollarSign className="w-5 h-5" strokeWidth={3} />
-                            </button>
-                          )}
+                          <AnimatePresence mode="wait">
+                            {invoice.status === 'unpaid' && (
+                              <motion.button
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0 }}
+                                onClick={() => payMutation.mutate(invoice.id)}
+                                disabled={payMutation.isPending}
+                                className="p-3 hover:bg-playful-green/20 rounded-xl transition-all active:scale-90 border-2 border-black bg-playful-green text-black shadow-solid-sm disabled:opacity-50 disabled:grayscale"
+                                title="Mark as Paid"
+                              >
+                                {payMutation.isPending && payMutation.variables === invoice.id ? (
+                                  <Loader2 className="w-5 h-5 animate-spin" strokeWidth={3} />
+                                ) : (
+                                  <DollarSign className="w-5 h-5" strokeWidth={3} />
+                                )}
+                              </motion.button>
+                            )}
+                          </AnimatePresence>
                           <button
                             onClick={() => handleDownload(invoice.id)}
                             className="p-3 hover:bg-playful-blue/20 rounded-xl transition-all active:scale-90 border-2 border-black bg-white text-playful-blue shadow-solid-sm"
+                            title="Download PDF"
                           >
                             <FileText className="w-5 h-5" strokeWidth={3} />
                           </button>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>
