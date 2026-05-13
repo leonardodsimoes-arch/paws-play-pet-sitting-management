@@ -5,10 +5,10 @@ import { api } from '@/lib/api-client';
 import { User, Dog, Booking, Invoice } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Mail, Dog as DogIcon, Calendar, CreditCard, PlusCircle, Loader2, Sparkles, Phone, MapPin, LifeBuoy, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Mail, Dog as DogIcon, Calendar, CreditCard, PlusCircle, Loader2, Sparkles, Phone, MapPin, LifeBuoy, ArrowRight, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { parseLocalISO } from '@/lib/utils';
+import { parseLocalISO, cn } from '@/lib/utils';
 import { format } from 'date-fns';
 export function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
@@ -72,7 +72,7 @@ export function AdminUserDetail() {
             Manual Invoice
           </Button>
         </header>
-        <motion.div 
+        <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="playful-card p-10 bg-playful-yellow border-4 border-black text-black shadow-solid relative overflow-hidden"
@@ -151,9 +151,9 @@ export function AdminUserDetail() {
             {dogs.length === 0 ? (
               <div className="col-span-full p-16 playful-card bg-white border-4 border-dashed rounded-3xl text-center font-bold text-muted-foreground text-2xl italic">No dogs registered yet.</div>
             ) : dogs.map(dog => (
-              <motion.div 
-                key={dog.id} 
-                whileHover={{ y: -6, scale: 1.02 }} 
+              <motion.div
+                key={dog.id}
+                whileHover={{ y: -6, scale: 1.02 }}
                 className="playful-card p-8 bg-white border-4 border-black group shadow-solid"
               >
                 <div className="h-14 w-14 bg-playful-yellow rounded-2xl border-4 border-black flex items-center justify-center mb-6 rotate-3 shadow-solid-sm group-hover:rotate-6 transition-transform shrink-0">
