@@ -1,13 +1,14 @@
 import { IndexedEntity } from "./core-utils";
 import type { User, Dog, Booking, Invoice, Chat, ChatMessage } from "@shared/types";
 import { MOCK_CHATS, MOCK_USERS, MOCK_DOGS, MOCK_BOOKINGS, MOCK_INVOICES } from "@shared/mock-data";
+import { Env } from "./core-utils";
 export class UserEntity extends IndexedEntity<User> {
   static readonly entityName = "user";
   static readonly indexName = "users";
-  static readonly initialState: User = { 
-    id: "", 
-    name: "", 
-    email: "", 
+  static readonly initialState: User = {
+    id: "",
+    name: "",
+    email: "",
     role: "client",
     phone: "",
     address: "",
@@ -18,6 +19,23 @@ export class UserEntity extends IndexedEntity<User> {
     emergencyPhone: ""
   };
   static seedData = MOCK_USERS;
+  /**
+   * Ensures specific demo accounts are ALWAYS present in the system.
+   * This is more robust than simple list check as it verifies by email/ID.
+   */
+  static async ensureDemoAccounts(env: Env): Promise<void> {
+    const seeds = this.seedData;
+    if (!seeds || seeds.length === 0) return;
+    // We check existing users to see if our specific demo emails are missing
+    const { items: existingUsers } = await this.list(env, null, 100);
+    const existingEmails = new Set(existingUsers.map(u => u.email.toLowerCase()));
+    for (const seed of seeds) {
+      if (!existingEmails.has(seed.email.toLowerCase())) {
+        console.log(`[SEED] Creating missing demo account: ${seed.email}`);
+        await this.create(env, { ...seed });
+      }
+    }
+  }
 }
 export class DogEntity extends IndexedEntity<Dog> {
   static readonly entityName = "dog";

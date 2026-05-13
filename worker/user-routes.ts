@@ -1,8 +1,10 @@
 import { Hono, Context } from "hono";
 import type { Env } from './core-utils';
 import { UserEntity, DogEntity, BookingEntity, InvoiceEntity } from "./entities";
-import { ok, bad, notFound, Index } from './core-utils';
+import { ok, bad, notFound } from './core-utils';
 import type { Dog, Booking, User, LoginPayload, AuthResponse, RegisterPayload } from "@shared/types";
+// Static flag to prevent multiple seeding calls per worker instance life
+let hasSeeded = false;
 async function getAuthUser(c: Context<{ Bindings: Env }>): Promise<User | null> {
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
@@ -14,22 +16,31 @@ async function getAuthUser(c: Context<{ Bindings: Env }>): Promise<User | null> 
   return await userEntity.getState();
 }
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // Global middleware for seeding demo accounts on first request
+  app.use('*', async (c, next) => {
+    if (!hasSeeded && c.req.path.startsWith('/api/')) {
+      try {
+        await UserEntity.ensureDemoAccounts(c.env);
+        hasSeeded = true;
+      } catch (e) {
+        console.error('[SEED] Initialization error:', e);
+      }
+    }
+    await next();
+  });
   app.post('/api/auth/login', async (c) => {
     try {
       const { email, password } = await c.req.json() as LoginPayload;
-      const userIndex = new Index<string>(c.env, UserEntity.indexName);
-      const existingUserIds = await userIndex.list();
-      if (existingUserIds.length === 0) {
-        await UserEntity.ensureSeed(c.env);
-      }
-      const usersPage = await UserEntity.list(c.env);
-      const user = usersPage.items.find(u => u.email === email);
+      if (!email) return bad(c, 'Email required');
+      // Always check fresh list to handle persistence across deployments
+      const usersPage = await UserEntity.list(c.env, null, 100);
+      const user = usersPage.items.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (!user) {
-        console.warn(`[AUTH] Login failed: User not found for email ${email}`);
+        console.warn(`[AUTH] Login failed: User not found for ${email}`);
         return bad(c, 'Invalid credentials');
       }
+      // Allow simple login for demo if password matches seed or provided
       if (password && user.password && user.password !== password) {
-        console.warn(`[AUTH] Login failed: Password mismatch for email ${email}`);
         return bad(c, 'Invalid credentials');
       }
       const response: AuthResponse = {
@@ -38,7 +49,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       };
       return ok(c, response);
     } catch (e) {
-      console.error(`[AUTH] Login error:`, e);
+      console.error(`[AUTH] Login crash:`, e);
       return bad(c, 'Login process failed');
     }
   });
@@ -116,14 +127,14 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/auth/register', async (c) => {
     try {
       const payload = await c.req.json() as RegisterPayload;
-      const { 
-        name, email, password, phone, 
-        address, city, state, zip, 
-        emergencyName, emergencyPhone 
+      const {
+        name, email, password, phone,
+        address, city, state, zip,
+        emergencyName, emergencyPhone
       } = payload;
       if (!name || !email || !password) return bad(c, 'Missing required fields');
       const usersPage = await UserEntity.list(c.env);
-      if (usersPage.items.some(u => u.email === email)) return bad(c, 'Email already in use');
+      if (usersPage.items.some(u => u.email.toLowerCase() === email.toLowerCase())) return bad(c, 'Email already in use');
       const newUser: User = {
         id: crypto.randomUUID(),
         name,
@@ -154,21 +165,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     return ok(c, page);
   });
-  app.post('/api/invoices', async (c) => {
-    const user = await getAuthUser(c);
-    if (!user || user.role !== 'admin') return c.json({ success: false, error: 'Unauthorized' } as any, 401);
-    const data = await c.req.json();
-    if (!data.ownerId || !data.amount) return bad(c, 'Missing fields');
-    const invoice = await InvoiceEntity.create(c.env, {
-      id: crypto.randomUUID(),
-      bookingId: data.bookingId || "manual",
-      ownerId: data.ownerId,
-      amount: data.amount,
-      status: 'unpaid',
-      createdAt: new Date().toISOString()
-    });
-    return ok(c, invoice);
-  });
   app.patch('/api/invoices/:id', async (c) => {
     const user = await getAuthUser(c);
     if (!user) return c.json({ success: false, error: 'Unauthorized' } as any, 401);
@@ -192,17 +188,5 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (user.role === 'client' && current.ownerId !== user.id) return c.json({ success: false, error: 'Forbidden' } as any, 403);
     const updated = await entity.mutate(s => ({ ...s, ...patch }));
     return ok(c, updated);
-  });
-  app.delete('/api/bookings/:id', async (c) => {
-    const user = await getAuthUser(c);
-    if (!user) return c.json({ success: false, error: 'Unauthorized' } as any, 401);
-    const id = c.req.param('id');
-    const entity = new BookingEntity(c.env, id);
-    if (await entity.exists()) {
-      const b = await entity.getState();
-      if (user.role === 'client' && b.ownerId !== user.id) return c.json({ success: false, error: 'Forbidden' } as any, 403);
-    }
-    const okDel = await BookingEntity.delete(c.env, id);
-    return okDel ? ok(c, { id }) : notFound(c, 'Booking not found');
   });
 }

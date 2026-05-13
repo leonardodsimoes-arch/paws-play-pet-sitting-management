@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Dog, KeyRound, Mail, Loader2, Sparkles, Info, ArrowRight } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Dog, KeyRound, Mail, Loader2, Sparkles, UserCheck, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,10 +19,9 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const setAuth = useAuthStore(s => s.setAuth);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' }
   });
@@ -46,6 +45,11 @@ export function LoginPage() {
       setIsSubmitting(false);
     }
   };
+  const quickLogin = (email: string) => {
+    setValue('email', email);
+    setValue('password', 'password123');
+    handleSubmit(onSubmit)();
+  };
   return (
     <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4">
       <motion.div
@@ -60,6 +64,29 @@ export function LoginPage() {
           <h1 className="text-4xl font-black italic tracking-tighter uppercase">Pack Login</h1>
           <p className="font-bold text-muted-foreground">Ready for some fluffy adventures?</p>
         </header>
+        <div className="space-y-4">
+          <p className="text-xs font-black uppercase text-muted-foreground text-center tracking-widest">Quick Demo Login</p>
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              onClick={() => quickLogin('admin@fluffy.com')}
+              className="playful-btn bg-playful-yellow text-black h-14 border-black flex flex-col items-center justify-center leading-none"
+            >
+              <ShieldCheck className="w-5 h-5 mb-1" />
+              <span className="text-[10px] font-black uppercase">Admin Hub</span>
+            </Button>
+            <Button
+              onClick={() => quickLogin('alex@fluffy.com')}
+              className="playful-btn bg-playful-blue text-white h-14 border-black flex flex-col items-center justify-center leading-none"
+            >
+              <UserCheck className="w-5 h-5 mb-1" />
+              <span className="text-[10px] font-black uppercase">Client Pack</span>
+            </Button>
+          </div>
+        </div>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center"><span className="w-full border-t-2 border-black/10" /></div>
+          <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-4 font-black text-muted-foreground">Or Use Email</span></div>
+        </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label className="font-black text-lg">Fluffy Email</Label>
@@ -90,7 +117,7 @@ export function LoginPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="playful-btn w-full bg-playful-blue text-white hover:bg-playful-blue/90 h-14 text-xl font-black"
+            className="playful-btn w-full bg-playful-pink text-white hover:bg-playful-pink/90 h-14 text-xl font-black"
           >
             {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "LOG IN"}
           </Button>
@@ -102,15 +129,6 @@ export function LoginPage() {
               Join the Pack <ArrowRight size={16} />
             </Link>
           </p>
-        </div>
-        <div className="p-4 bg-playful-yellow/20 rounded-2xl border-2 border-black/10 space-y-2">
-          <p className="text-xs font-black uppercase flex items-center gap-2 text-playful-blue">
-            <Info size={14} /> Demo Access
-          </p>
-          <div className="text-[11px] font-bold space-y-1">
-            <p><span className="text-muted-foreground">Admin:</span> admin@fluffy.com / password123</p>
-            <p><span className="text-muted-foreground">Client:</span> alex@fluffy.com / password123</p>
-          </div>
         </div>
       </motion.div>
     </div>
