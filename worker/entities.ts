@@ -21,18 +21,17 @@ export class UserEntity extends IndexedEntity<User> {
   static seedData = MOCK_USERS;
   /**
    * Ensures specific demo accounts are ALWAYS present in the system.
-   * This is more robust than simple list check as it verifies by email/ID.
+   * This logic checks for each seed account by ID to guarantee availability.
    */
   static async ensureDemoAccounts(env: Env): Promise<void> {
     const seeds = this.seedData;
     if (!seeds || seeds.length === 0) return;
-    // We check existing users to see if our specific demo emails are missing
-    const { items: existingUsers } = await this.list(env, null, 100);
-    const existingEmails = new Set(existingUsers.map(u => u.email.toLowerCase()));
     for (const seed of seeds) {
-      if (!existingEmails.has(seed.email.toLowerCase())) {
-        console.log(`[SEED] Creating missing demo account: ${seed.email}`);
-        await this.create(env, { ...seed });
+      const inst = new UserEntity(env, seed.id);
+      const exists = await inst.exists();
+      if (!exists) {
+        console.log(`[SEED] Creating missing demo account: ${seed.email} (${seed.id})`);
+        await UserEntity.create(env, { ...seed });
       }
     }
   }

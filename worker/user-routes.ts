@@ -30,16 +30,19 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   app.post('/api/auth/login', async (c) => {
     try {
+      // FORCE SEEDING check here to ensure demo accounts exist before we try to query them.
+      // This solves issues in clean environments where middleware might not have finished or triggered.
+      await UserEntity.ensureDemoAccounts(c.env);
       const { email, password } = await c.req.json() as LoginPayload;
       if (!email) return bad(c, 'Email required');
-      // Always check fresh list to handle persistence across deployments
+      // Fetch users to find match
       const usersPage = await UserEntity.list(c.env, null, 100);
       const user = usersPage.items.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (!user) {
         console.warn(`[AUTH] Login failed: User not found for ${email}`);
         return bad(c, 'Invalid credentials');
       }
-      // Allow simple login for demo if password matches seed or provided
+      // Simple password check for demo
       if (password && user.password && user.password !== password) {
         return bad(c, 'Invalid credentials');
       }
