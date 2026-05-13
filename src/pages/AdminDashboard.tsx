@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isWithinInterval, startOfDay, format, isSameDay } from 'date-fns';
+import { isWithinInterval, startOfDay, format, isSameDay, endOfDay } from 'date-fns';
 import { cn, parseLocalISO } from '@/lib/utils';
 import {
   AlertDialog,
@@ -43,12 +43,20 @@ export function AdminDashboard() {
     onError: (err) => toast.error("Update failed", { description: String(err) })
   });
   const todayStart = startOfDay(new Date());
+  const todayEnd = endOfDay(new Date());
+  // Comprehensive operational logic for schedule filtering
   const activeBookings = bookings.filter(b => {
     if (b.status === 'cancelled' || b.status === 'completed') return false;
     if (!b.startDate || !b.endDate) return false;
-    const start = startOfDay(parseLocalISO(b.startDate));
-    const end = startOfDay(parseLocalISO(b.endDate));
-    return isWithinInterval(todayStart, { start, end });
+    const start = parseLocalISO(b.startDate);
+    const end = parseLocalISO(b.endDate);
+    // A booking is active today if it overlaps with any part of today.
+    // Using isWithinInterval to check if today overlaps the booking range.
+    return (
+      (start <= todayEnd && end >= todayStart) ||
+      isWithinInterval(todayStart, { start, end }) ||
+      isWithinInterval(todayEnd, { start, end })
+    );
   }).sort((a, b) => {
     const aEnd = parseLocalISO(a.endDate);
     const bEnd = parseLocalISO(b.endDate);
@@ -81,7 +89,7 @@ export function AdminDashboard() {
             </h1>
             <p className="font-bold text-muted-foreground text-xl">Daily Operations Dashboard</p>
           </div>
-          <motion.div 
+          <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             className="bg-playful-blue text-white border-4 border-black px-8 py-5 rounded-3xl font-black shadow-solid flex items-center gap-4 text-lg"
@@ -96,8 +104,8 @@ export function AdminDashboard() {
             { label: 'Today\'s Buddies', value: activeBookings.length, icon: LayoutDashboard, color: 'bg-playful-green', textColor: 'text-black' },
             { label: 'Care Alerts', value: todayCareAlertDogs.length, icon: AlertTriangle, color: 'bg-playful-pink', textColor: 'text-white' },
           ].map((stat, i) => (
-            <motion.div 
-              key={i} 
+            <motion.div
+              key={i}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: i * 0.1 }}
@@ -125,7 +133,7 @@ export function AdminDashboard() {
             <div className="space-y-5">
               <AnimatePresence mode="popLayout">
                 {activeBookings.length === 0 ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="p-12 playful-card bg-white border-dashed text-center font-bold text-muted-foreground border-4 border-black"
@@ -134,8 +142,8 @@ export function AdminDashboard() {
                   </motion.div>
                 ) : activeBookings.map(booking => {
                   const dog = dogs.find(d => d.id === booking.dogId);
-                  const start = startOfDay(parseLocalISO(booking.startDate));
-                  const end = startOfDay(parseLocalISO(booking.endDate));
+                  const start = parseLocalISO(booking.startDate);
+                  const end = parseLocalISO(booking.endDate);
                   let statusLabel = 'In House';
                   let timeInfo = '';
                   let statusColor = 'bg-playful-blue text-white';
@@ -153,9 +161,9 @@ export function AdminDashboard() {
                     statusColor = 'bg-playful-blue text-white';
                   }
                   return (
-                    <motion.div 
+                    <motion.div
                       layout
-                      key={booking.id} 
+                      key={booking.id}
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.9, opacity: 0 }}
@@ -198,7 +206,7 @@ export function AdminDashboard() {
                       </div>
                       {dog?.instructions && (
                         <div className="bg-playful-yellow border-2 border-black p-3 rounded-2xl text-xs font-bold italic text-black flex items-center gap-3">
-                          <Utensils size={16} className="shrink-0" />
+                          <Utensils size={16} className="shrink-0" strokeWidth={3} />
                           <span className="truncate">{dog.instructions}</span>
                         </div>
                       )}
@@ -215,8 +223,8 @@ export function AdminDashboard() {
               </h2>
               <div className="space-y-6">
                 {todayCareAlertDogs.map((dog, i) => (
-                  <motion.div 
-                    key={dog.id} 
+                  <motion.div
+                    key={dog.id}
                     initial={{ x: 30, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: i * 0.1 }}

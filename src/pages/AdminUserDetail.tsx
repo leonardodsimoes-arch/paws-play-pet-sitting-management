@@ -136,7 +136,7 @@ export function AdminUserDetail() {
                 </>
               ) : (
                 <div className="text-center space-y-4">
-                   <AlertTriangle className="mx-auto text-muted-foreground" size={40} />
+                   <AlertTriangle className="mx-auto text-muted-foreground" size={40} strokeWidth={3} />
                    <p className="font-bold text-muted-foreground italic text-xl">No emergency contact recorded.</p>
                 </div>
               )}
@@ -162,7 +162,7 @@ export function AdminUserDetail() {
                 <h4 className="font-black text-3xl italic uppercase tracking-tighter leading-none mb-1 truncate">{dog.name}</h4>
                 <p className="text-[11px] font-black text-muted-foreground mb-6 uppercase tracking-widest truncate">{dog.breed}</p>
                 <Button asChild className="w-full playful-btn bg-playful-blue text-white border-black h-12 text-base font-black shadow-solid-sm active:translate-y-0.5">
-                  <Link to={`/dogs/${dog.id}`} className="flex items-center justify-center gap-2">View Profile <ArrowRight size={16} /></Link>
+                  <Link to={`/dogs/${dog.id}`} className="flex items-center justify-center gap-2">View Profile <ArrowRight size={16} strokeWidth={3} /></Link>
                 </Button>
               </motion.div>
             ))}
