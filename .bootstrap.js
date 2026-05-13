@@ -82,7 +82,8 @@ function runSetupCommands() {
     "bun install date-fns",
     "bun add -d vite@8.0.8 @vitejs/plugin-react@6.0.1",
     "bun install typescript@^5.8.0 @types/node --save-dev",
-    "bun add date-fns@^3.6.0"
+    "bun add date-fns@^3.6.0",
+    "bun add lucide-react date-fns framer-motion clsx tailwind-merge zod @hookform/resolvers react-hook-form @tanstack/react-query sonner"
 ];
     
     if (commands.length === 0) {
